@@ -1,0 +1,54 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0d0f11;
+  --bg-card: #161a1e;
+  --bg-input: #1e2228;
+  --bg-hover: #1e2530;
+  --accent: #00e676;
+  --accent-dim: rgba(0, 230, 118, 0.12);
+  --accent-border: rgba(0, 230, 118, 0.35);
+  --text: #c8cdd4;
+  --text-dim: #6b7280;
+  --text-bright: #f0f2f4;
+  --border: #252b34;
+  --border-light: #1e2228;
+
+  --font-heading: 'Bebas Neue', sans-serif;
+  --font-body: 'Barlow Condensed', sans-serif;
+
+  --radius: 8px;
+  --radius-sm: 4px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100svh;
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+input, select {
+  font-family: var(--font-body);
+}
