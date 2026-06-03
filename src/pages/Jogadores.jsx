@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+console.log('Página carregou')
 import './Jogadores.css'
 
 const POSICOES = ['GOL', 'ZAG', 'LAT', 'MEI', 'ATA']
@@ -18,50 +19,85 @@ function getLabel(nota) {
 }
 
 export default function Jogadores() {
-  const [jogadores, setJogadores] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('jogadores')) || []
-    } catch {
-      return []
-    }
-  })
+const [jogadores, setJogadores] = useState([])
   const [nome, setNome] = useState('')
   const [posicao, setPosicao] = useState('ATA')
   const [busca, setBusca] = useState('')
   const [editando, setEditando] = useState(null)
 
   useEffect(() => {
-    localStorage.setItem('jogadores', JSON.stringify(jogadores))
-  }, [jogadores])
+    fetch('http://localhost:3000/jogadores')
+        .then(res => res.json())
+        .then(data => setJogadores(data))
+        .catch(err => console.error(err))
+}, [])
 
-  function addJogador() {
-    if (!nome.trim()) return
-    setJogadores(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        nome: nome.trim(),
-        posicao,
-        stats: { partidas: 0, gols: 0, assistencias: 0 },
+async function addJogador() {
+  if (!nome.trim()) return
+
+  try {
+    await fetch('http://localhost:3000/jogadores', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
-    ])
+      body: JSON.stringify({
+        nome: nome.trim(),
+        posicao
+      })
+    })
+
+    const resposta = await fetch('http://localhost:3000/jogadores')
+    const dados = await resposta.json()
+
+    setJogadores(dados)
     setNome('')
-  }
 
-  function removeJogador(id) {
-    setJogadores(prev => prev.filter(j => j.id !== id))
+  } catch (err) {
+    console.error(err)
   }
+}
 
-  function salvarEdicao() {
-    setJogadores(prev =>
-      prev.map(j =>
-        j.id === editando.id
-          ? { ...j, nome: editando.nome, posicao: editando.posicao }
-          : j
-      )
-    )
+async function removeJogador(id) {
+  try {
+    await fetch(`http://localhost:3000/jogadores/${id}`, {
+      method: 'DELETE'
+    })
+
+    const resposta = await fetch('http://localhost:3000/jogadores')
+    const dados = await resposta.json()
+
+    setJogadores(dados)
+
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+ async function salvarEdicao() {
+  try {
+
+    await fetch(`http://localhost:3000/jogadores/${editando.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nome: editando.nome,
+        posicao: editando.posicao
+      })
+    })
+
+    const resposta = await fetch('http://localhost:3000/jogadores')
+    const dados = await resposta.json()
+
+    setJogadores(dados)
     setEditando(null)
+
+  } catch (err) {
+    console.error(err)
   }
+}
 
   const rankingCompleto = jogadores
     .map(j => ({ ...j, nota: calcNota(j.stats) }))
@@ -84,14 +120,14 @@ export default function Jogadores() {
             placeholder="Nome do jogador"
           />
           <select
-            className="inp sel-pos"
-            value={posicao}
-            onChange={e => setPosicao(e.target.value)}
-          >
-            {POSICOES.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+  className="inp sel-pos"
+  value={posicao}
+  onChange={e => setPosicao(e.target.value)}
+>
+  {POSICOES.map(p => (
+    <option key={p} value={p}>{p}</option>
+  ))}
+</select>
           <button className="btn-add" onClick={addJogador}>+ ADD</button>
         </div>
       </div>
