@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Sorteio.css'
+import { API } from '../api.js'
 
 const TIME_CORES = ['#00e676', '#ff4444', '#2979ff', '#ffd600']
 
@@ -51,7 +52,7 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
   const [importando, setImportando]   = useState(false)
 
   useEffect(() => {
-    fetch('http://localhost:3000/jogadores')
+    fetch(`${API}/jogadores`)
       .then(res => res.json())
       .then(setJogadores)
       .catch(() => setJogadores([]))
@@ -80,7 +81,7 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
         encontradosSet.add(encontrado.id)
       } else {
         try {
-          const res = await fetch('http://localhost:3000/jogadores', {
+          const res = await fetch(`${API}/jogadores`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nome, posicao: goleiro ? 'GOL' : 'ATA' })

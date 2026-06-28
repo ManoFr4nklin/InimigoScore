@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import './Jogadores.css'
+import { API } from '../api.js'
 
 const POSICOES = ['GOL', 'ATA', 'MEI', 'DEF']
 
@@ -63,7 +64,7 @@ export default function Jogadores() {
   const [encerradoInfo, setEncerradoInfo] = useState(null)
 
   useEffect(() => {
-    fetch('http://localhost:3000/jogadores')
+    fetch(`${API}/jogadores`)
       .then(res => {
         if (!res.ok) throw new Error(`${res.status}`)
         return res.json()
@@ -76,7 +77,7 @@ export default function Jogadores() {
   const carregarRankDia = useCallback(() => {
     setCarregandoDia(true)
     setEncerradoInfo(null)
-    fetch(`http://localhost:3000/dia/${dataHoje()}`)
+    fetch(`${API}/dia/${dataHoje()}`)
       .then(res => res.json())
       .then(data => setRankDia(Array.isArray(data) ? data : []))
       .catch(() => setErro('Erro ao carregar ranking do dia.'))
@@ -93,11 +94,11 @@ export default function Jogadores() {
     if (!confirm(`Encerrar o dia ${dataHoje()} e atualizar o Firepower de todos?`)) return
     setEncerrando(true)
     try {
-      const res = await fetch(`http://localhost:3000/dia/${dataHoje()}/encerrar`, { method: 'POST' })
+      const res = await fetch(`${API}/dia/${dataHoje()}/encerrar`, { method: 'POST' })
       const json = await res.json()
       if (!res.ok) return setErro(json.error || 'Erro ao encerrar o dia.')
       setEncerradoInfo(json)
-      const novo = await fetch('http://localhost:3000/jogadores').then(r => r.json())
+      const novo = await fetch(`${API}/jogadores`).then(r => r.json())
       setJogadores(novo)
       carregarRankDia()
     } catch {
@@ -125,7 +126,7 @@ export default function Jogadores() {
 
     for (const p of novos) {
       try {
-        const res = await fetch('http://localhost:3000/jogadores', {
+        const res = await fetch(`${API}/jogadores`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nome: p.nome, posicao: p.posicao })
@@ -145,7 +146,7 @@ export default function Jogadores() {
   async function addJogador() {
     if (!nome.trim()) return
     try {
-      const res = await fetch('http://localhost:3000/jogadores', {
+      const res = await fetch(`${API}/jogadores`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: nome.trim(), posicao })
@@ -160,7 +161,7 @@ export default function Jogadores() {
 
   async function removeJogador(id) {
     try {
-      await fetch(`http://localhost:3000/jogadores/${id}`, { method: 'DELETE' })
+      await fetch(`${API}/jogadores/${id}`, { method: 'DELETE' })
       setJogadores(prev => prev.filter(j => j.id !== id))
     } catch {
       setErro('Erro ao remover jogador.')
@@ -169,7 +170,7 @@ export default function Jogadores() {
 
   async function salvarEdicao() {
     try {
-      const res = await fetch(`http://localhost:3000/jogadores/${editando.id}`, {
+      const res = await fetch(`${API}/jogadores/${editando.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: editando.nome, posicao: editando.posicao, firepower: editando.firepower })

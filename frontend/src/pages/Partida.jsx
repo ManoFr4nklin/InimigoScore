@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import './Partida.css'
-
-const API = 'http://localhost:3000'
+import { API } from '../api.js'
 
 function getStat(stats, jId, campo) {
   return (stats[jId] || {})[campo] || 0
