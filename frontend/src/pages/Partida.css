@@ -1,0 +1,556 @@
+.partida-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.step-title {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  color: var(--text-bright);
+  letter-spacing: 1px;
+  flex: 1;
+}
+
+.step-count {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* Placar geral de vitórias */
+.placar-geral {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.pg-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
+
+.pg-nome {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.pg-num {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--text-bright);
+  line-height: 1;
+}
+
+.pg-label {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* Vitórias no placar em andamento */
+.pl-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.pl-time-right {
+  align-items: center;
+}
+
+.pl-vits {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* Vitórias no card de início */
+.inicio-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.inicio-vits {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+
+/* Início: seleção dos 2 times */
+.inicio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.inicio-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.inicio-card:hover { background: var(--bg-hover); }
+.inicio-card.selecionado { background: rgba(255,255,255,0.03); }
+
+.inicio-time-nome {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.inicio-players {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.inicio-player {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Botões comuns */
+.btn-sortear {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  letter-spacing: 1px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px;
+  width: 100%;
+  transition: opacity 0.2s;
+}
+
+.btn-sortear:hover:not(:disabled) { opacity: 0.85; }
+.btn-sortear:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-reset {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  letter-spacing: 1px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  width: 100%;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-reset:hover { color: var(--text); border-color: var(--text-dim); }
+
+/* Cabeçalho do confronto */
+.confronto-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.seq-badge {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 1px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  color: var(--text-dim);
+}
+
+.fila-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fila-label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.fila-chip {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  background: transparent;
+}
+
+/* Placar */
+.placar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  gap: 12px;
+}
+
+.pl-nome {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.pl-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pl-num {
+  font-family: var(--font-heading);
+  font-size: 56px;
+  line-height: 1;
+  color: var(--text-bright);
+  letter-spacing: 2px;
+  min-width: 48px;
+  text-align: center;
+  transition: color 0.3s;
+}
+
+.pl-num.pl-win { font-size: 64px; }
+
+.pl-x {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  color: var(--text-dim);
+}
+
+/* Times em campo */
+.times-jogando {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-jogo-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 3px solid var(--cor);
+}
+
+.time-jogo-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+/* Player stat row with +/- counters */
+.player-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.psr-nome {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.psr-counters {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.counter-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ctr-btn {
+  width: 24px;
+  height: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.ctr-btn:hover:not(:disabled) {
+  color: var(--text-bright);
+  border-color: var(--text-dim);
+}
+
+.ctr-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.ctr-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Botões de encerramento */
+.action-btns {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+}
+
+.btn-vitoria {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 1px;
+  background: transparent;
+  color: var(--vcor, var(--accent));
+  border: 1px solid color-mix(in srgb, var(--vcor, var(--accent)) 40%, transparent);
+  border-radius: var(--radius);
+  padding: 11px 10px;
+  transition: background 0.2s;
+}
+
+.btn-vitoria:hover {
+  background: color-mix(in srgb, var(--vcor, var(--accent)) 10%, transparent);
+}
+
+.btn-empate {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 1px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.btn-empate:hover { color: var(--text); border-color: var(--text-dim); }
+
+/* Resultado */
+.resultado-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.res-placar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.res-time-nome {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.res-nums {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  color: var(--text-bright);
+  letter-spacing: 4px;
+}
+
+.res-msg {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rotacao {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.rot-grupo { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.rot-label { font-family: var(--font-heading); font-size: 12px; letter-spacing: 2px; color: var(--text-dim); }
+.rot-times { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+
+.rot-badge {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.rot-seta {
+  font-size: 24px;
+  color: var(--text-dim);
+}
+
+.btn-proximo {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  letter-spacing: 1px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 28px;
+  width: 100%;
+  transition: opacity 0.2s;
+}
+
+.btn-proximo:hover { opacity: 0.85; }
+
+/* Shared */
+.pos-badge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pos-gol { background: rgba(255, 214, 0, 0.12);   color: #ffd600;  border: 1px solid rgba(255, 214, 0, 0.3); }
+.pos-ata { background: rgba(255, 68, 68, 0.12);   color: #ff4444;  border: 1px solid rgba(255, 68, 68, 0.3); }
+.pos-def { background: rgba(41, 121, 255, 0.12);  color: #2979ff;  border: 1px solid rgba(41, 121, 255, 0.3); }
+.pos-mei { background: rgba(168, 85, 247, 0.12);  color: #a855f7;  border: 1px solid rgba(168, 85, 247, 0.3); }
+
+/* Seleção de goleiros */
+.goleiros-selecao {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.gol-sel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gol-sel-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.sel-gol {
+  width: 100%;
+  cursor: pointer;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 16px;
+  padding: 48px 20px;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .psr-counters  { flex-wrap: wrap; gap: 4px; }
+}
+
+@media (max-width: 480px) {
+  .inicio-grid      { grid-template-columns: 1fr; }
+  .goleiros-selecao { grid-template-columns: 1fr; }
+  .pl-num           { font-size: 44px; }
+  .pl-num.pl-win    { font-size: 52px; }
+  .pl-nome          { font-size: 15px; letter-spacing: 1px; }
+  .action-btns      { grid-template-columns: 1fr; }
+  .placar-geral     { gap: 4px; }
+  .placar-row       { padding: 12px 14px; }
+  .res-nums         { font-size: 40px; }
+  .res-time-nome    { font-size: 17px; }
+  .rotacao          { padding: 12px 14px; gap: 10px; }
+  .step-title       { font-size: 22px; }
+  .player-stat-row  { flex-wrap: wrap; }
+  .psr-counters     { width: 100%; flex-wrap: wrap; gap: 4px; }
+  .counter-group    { flex: 1 0 auto; }
+}
+
+@media (max-width: 380px) {
+  .pl-num        { font-size: 38px; }
+  .pl-num.pl-win { font-size: 46px; }
+  .pl-nome       { font-size: 13px; }
+  .ctr-btn       { width: 22px; height: 22px; font-size: 12px; }
+  .ctr-val       { min-width: 18px; font-size: 11px; }
+  .psr-nome      { font-size: 12px; }
+  .pg-num        { font-size: 17px; }
+}
