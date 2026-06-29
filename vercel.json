@@ -2,11 +2,6 @@
   "installCommand": "npm install",
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "functions": {
-    "api/[...slug].js": {
-      "includeFiles": "backend/**"
-    }
-  },
   "rewrites": [
     { "source": "/:path*", "destination": "/index.html" }
   ]
