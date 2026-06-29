@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API } from '../api.js'
 import './Resultados.css'
 
 function dataHoje() {
@@ -24,9 +25,9 @@ export default function Resultados() {
   useEffect(() => {
     setCarregando(true)
     Promise.all([
-      fetch(`http://localhost:3000/dia/${data}`).then(r => r.json()),
-      fetch(`http://localhost:3000/dia/${data}/confrontos`).then(r => r.json()),
-      fetch(`http://localhost:3000/dia/${data}/times`).then(r => r.json())
+      fetch(`${API}/dia/${data}`).then(r => r.json()),
+      fetch(`${API}/dia/${data}/confrontos`).then(r => r.json()),
+      fetch(`${API}/dia/${data}/times`).then(r => r.json())
     ])
       .then(([rank, confs, times]) => {
         setRanking(Array.isArray(rank)  ? rank  : [])
