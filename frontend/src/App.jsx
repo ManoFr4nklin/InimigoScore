@@ -48,7 +48,9 @@ export default function App() {
       <main className="app-main">
         {page === 'jogadores'  && <Jogadores />}
         {page === 'sorteio'   && <Sorteio setTimes={setTimes} setGoleiros={setGoleiros} setPage={setPage} />}
-        {page === 'partida'   && <Partida times={times} setTimes={setTimes} goleiros={goleiros} />}
+        <div style={{ display: page === 'partida' ? 'block' : 'none' }}>
+          <Partida times={times} setTimes={setTimes} goleiros={goleiros} />
+        </div>
         {page === 'resultados' && <Resultados />}
       </main>
     </div>

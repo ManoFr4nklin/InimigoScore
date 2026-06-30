@@ -469,7 +469,71 @@
   transition: opacity 0.2s;
 }
 
-.btn-proximo:hover { opacity: 0.85; }
+.btn-proximo:hover:not(:disabled) { opacity: 0.85; }
+.btn-proximo:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Seleção manual do próximo confronto */
+.proximo-selecao {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proximo-label {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.proximo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.proximo-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.proximo-card:hover { border-color: var(--text-dim); }
+
+.proximo-card.proximo-sel { border-width: 2px; }
+
+.proximo-card-nome {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.proximo-card-vit {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.proximo-card-status {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.proximo-card.proximo-sel .proximo-card-status {
+  color: var(--accent);
+}
 
 /* Shared */
 .pos-badge {

@@ -23,6 +23,7 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
   const [fase, setFase]                     = useState('inicio')
   const [resultado, setResultado]           = useState(null)
   const [iniciando, setIniciando]           = useState([])
+  const [proximoJogando, setProximoJogando] = useState([])
 
   if (!times) {
     return (
@@ -138,6 +139,7 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
     }
 
     setResultado({ msg, sairIdxs, entrarIdxs, novoJogando, novaFila, novasVit, placarFinal })
+    setProximoJogando(novoJogando)
     setFase('resultado')
     salvar(placarFinal, resDB, currentStats, currentGoleiros)
   }
@@ -193,8 +195,9 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
 
   // ─── Próximo confronto ─────────────────────────────────────────────────────
   function proximo() {
-    const { novoJogando, novaFila, novasVit } = resultado
-    setJogando(novoJogando)
+    const { novasVit } = resultado
+    const novaFila = [0, 1, 2, 3].filter(i => !proximoJogando.includes(i))
+    setJogando(proximoJogando)
     setFila(novaFila)
     setVitorias(novasVit)
     setStats({})
@@ -202,6 +205,17 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
     setResultado(null)
     setSequencia(s => s + 1)
     setFase(goleiros.length > 0 ? 'selecionandoGoleiros' : 'jogando')
+  }
+
+  function toggleProximoTime(idx) {
+    setProximoJogando(prev => {
+      if (prev.includes(idx)) {
+        if (prev.length <= 1) return prev
+        return prev.filter(i => i !== idx)
+      }
+      if (prev.length >= 2) return [...prev.slice(1), idx]
+      return [...prev, idx]
+    })
   }
 
   function resetar() {
@@ -255,7 +269,7 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
 
   // ─── TELA: Resultado ───────────────────────────────────────────────────────
   if (fase === 'resultado' && resultado) {
-    const { msg, sairIdxs, entrarIdxs, placarFinal } = resultado
+    const { msg, placarFinal } = resultado
     const [iA, iB] = jogando
     return (
       <div className="partida-page">
@@ -277,31 +291,32 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
             ))}
           </div>
 
-          <div className="rotacao">
-            <div className="rot-grupo">
-              <span className="rot-label">Saem</span>
-              <div className="rot-times">
-                {sairIdxs.map(i => (
-                  <span key={i} className="rot-badge" style={{ color: times[i].cor, borderColor: times[i].cor + '55' }}>
-                    {times[i].nome}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="rot-seta">→</div>
-            <div className="rot-grupo">
-              <span className="rot-label">Entram</span>
-              <div className="rot-times">
-                {entrarIdxs.map(i => (
-                  <span key={i} className="rot-badge" style={{ color: times[i].cor, borderColor: times[i].cor + '55' }}>
-                    {times[i].nome}
-                  </span>
-                ))}
-              </div>
+          <div className="proximo-selecao">
+            <p className="proximo-label">PRÓXIMO CONFRONTO — toque para trocar</p>
+            <div className="proximo-grid">
+              {times.map((t, i) => {
+                const sel = proximoJogando.includes(i)
+                return (
+                  <div
+                    key={i}
+                    className={`proximo-card${sel ? ' proximo-sel' : ''}`}
+                    style={sel ? { borderColor: t.cor, background: t.cor + '18' } : {}}
+                    onClick={() => toggleProximoTime(i)}
+                  >
+                    <span className="proximo-card-nome" style={{ color: t.cor }}>{t.nome}</span>
+                    {totalVitorias[i] > 0 && (
+                      <span className="proximo-card-vit">{totalVitorias[i]}V</span>
+                    )}
+                    <span className="proximo-card-status">{sel ? '▶ JOGA' : 'fila'}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          <button className="btn-proximo" onClick={proximo}>PRÓXIMO CONFRONTO →</button>
+          <button className="btn-proximo" onClick={proximo} disabled={proximoJogando.length !== 2}>
+            INICIAR PRÓXIMO →
+          </button>
           <button className="btn-reset" onClick={resetar}>Encerrar Pelada</button>
         </div>
       </div>
