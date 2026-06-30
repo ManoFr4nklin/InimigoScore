@@ -88,10 +88,20 @@ app.delete('/jogadores/:id', async (req, res) => {
 
 // ── Partidas ───────────────────────────────────────────────
 app.post('/partidas', async (req, res) => {
-  const hoje = new Date().toISOString().split('T')[0]
+  const data = req.body?.data || new Date().toISOString().split('T')[0]
   try {
-    const { rows } = await pool.query('INSERT INTO partidas (data) VALUES ($1) RETURNING *', [hoje])
+    const { rows } = await pool.query('INSERT INTO partidas (data) VALUES ($1) RETURNING *', [data])
     res.status(201).json(rows[0])
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete('/partidas/:id', async (req, res) => {
+  const { id } = req.params
+  try {
+    await pool.query('DELETE FROM jogadores_confronto WHERE fk_confronto IN (SELECT id FROM confrontos WHERE fk_partida = $1)', [id])
+    await pool.query('DELETE FROM confrontos WHERE fk_partida = $1', [id])
+    await pool.query('DELETE FROM partidas WHERE id = $1', [id])
+    res.status(204).send()
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 

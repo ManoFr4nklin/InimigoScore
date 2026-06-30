@@ -1,11 +1,11 @@
 import db from '../database/db.js'
 
 export async function criarPartida(req, res) {
-  const hoje = new Date().toISOString().split('T')[0]
+  const data = req.body?.data || new Date().toISOString().split('T')[0]
   try {
     const { rows } = await db.query(
       'INSERT INTO partidas (data) VALUES ($1) RETURNING *',
-      [hoje]
+      [data]
     )
     res.status(201).json(rows[0])
   } catch (err) {
