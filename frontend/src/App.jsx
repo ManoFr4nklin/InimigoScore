@@ -14,12 +14,30 @@ const PAGES = [
   { id: 'resultados', label: 'Resultados' },
 ]
 
+const TIMES_KEY    = 'inis_times'
+const GOLEIROS_KEY = 'inis_goleiros'
+
 export default function App() {
   const [logado, setLogado]       = useState(() => !!getToken())
   const [page, setPage]           = useState('jogadores')
-  const [times, setTimes]         = useState(null)
-  const [goleiros, setGoleiros]   = useState([])
+  const [times, setTimesState]    = useState(() => {
+    try { return JSON.parse(localStorage.getItem(TIMES_KEY)) } catch { return null }
+  })
+  const [goleiros, setGoleirosState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(GOLEIROS_KEY)) || [] } catch { return [] }
+  })
   const [testMode, setTestMode]   = useState(false)
+
+  function setTimes(val) {
+    setTimesState(val)
+    if (val === null) localStorage.removeItem(TIMES_KEY)
+    else localStorage.setItem(TIMES_KEY, JSON.stringify(val))
+  }
+
+  function setGoleiros(val) {
+    setGoleirosState(val)
+    localStorage.setItem(GOLEIROS_KEY, JSON.stringify(val))
+  }
 
   if (!logado) {
     return <Login onLogin={() => setLogado(true)} />
