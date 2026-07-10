@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import pg from 'pg'
+import jwt from 'jsonwebtoken'
 
 const { Pool } = pg
 
@@ -13,8 +14,44 @@ const pool = new Pool({
 })
 
 const app = express()
-app.use(cors())
+
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(o => o.trim())
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
+    cb(new Error('CORS não permitido'))
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
 app.use(express.json())
+
+// ── Auth (público — antes do middleware JWT) ───────────────
+app.post('/auth/login', async (req, res) => {
+  const { usuario, senha } = req.body ?? {}
+  if (!usuario || !senha) return res.status(400).json({ error: 'Usuário e senha obrigatórios' })
+  const validUser  = process.env.LOGIN_USER
+  const validSenha = process.env.LOGIN_SENHA
+  const secret     = process.env.JWT_SECRET
+  if (!validUser || !validSenha || !secret)
+    return res.status(500).json({ error: 'Servidor não configurado corretamente' })
+  if (usuario !== validUser || senha !== validSenha) {
+    await new Promise(r => setTimeout(r, 400))
+    return res.status(401).json({ error: 'Usuário ou senha incorretos' })
+  }
+  const token = jwt.sign({ usuario }, secret, { expiresIn: '12h' })
+  res.json({ token })
+})
+
+// ── JWT middleware ─────────────────────────────────────────
+app.use((req, res, next) => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) return next()
+  const header = req.headers['authorization']
+  if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'Não autorizado' })
+  try { jwt.verify(header.slice(7), secret); next() }
+  catch { res.status(401).json({ error: 'Token inválido ou expirado' }) }
+})
 
 // ── Jogadores ──────────────────────────────────────────────
 app.get('/jogadores', async (req, res) => {
@@ -88,10 +125,22 @@ app.delete('/jogadores/:id', async (req, res) => {
 
 // ── Partidas ───────────────────────────────────────────────
 app.post('/partidas', async (req, res) => {
-  const data = req.body?.data || new Date().toISOString().split('T')[0]
+  const hoje   = new Date().toISOString().split('T')[0]
+  const isTest = req.body?.is_test === true
   try {
-    const { rows } = await pool.query('INSERT INTO partidas (data) VALUES ($1) RETURNING *', [data])
+    const { rows } = await pool.query(
+      'INSERT INTO partidas (data, is_test) VALUES ($1, $2) RETURNING *',
+      [hoje, isTest]
+    )
     res.status(201).json(rows[0])
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// reset-test ANTES de /:id para não colidir
+app.delete('/partidas/reset-test', async (req, res) => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM partidas WHERE is_test = true')
+    res.json({ ok: true, partidas_removidas: rowCount })
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
@@ -124,16 +173,19 @@ app.post('/partidas/confrontos/:id/jogadores', async (req, res) => {
     return res.status(400).json({ error: 'Body deve ser um array de jogadores' })
   const values = []
   const placeholders = req.body.map((j, idx) => {
-    const b = idx * 10
-    values.push(confrontoId, j.fk_jogador, j.time,
+    const b = idx * 11
+    values.push(
+      confrontoId, j.fk_jogador, j.time,
       j.gols || 0, j.assistencias || 0, j.falhas || 0,
-      j.desarmes || 0, j.faltas || 0, j.amarelos || 0, j.vermelhos || 0)
-    return `($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7},$${b+8},$${b+9},$${b+10})`
+      j.desarmes || 0, j.faltas || 0, j.amarelos || 0, j.vermelhos || 0,
+      j.dribles || 0
+    )
+    return `($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7},$${b+8},$${b+9},$${b+10},$${b+11})`
   })
   try {
     const { rows } = await pool.query(
       `INSERT INTO jogadores_confronto
-         (fk_confronto, fk_jogador, time, gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos)
+         (fk_confronto, fk_jogador, time, gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos, dribles)
        VALUES ${placeholders.join(',')} RETURNING *`,
       values
     )
@@ -142,6 +194,12 @@ app.post('/partidas/confrontos/:id/jogadores', async (req, res) => {
 })
 
 // ── Dia ───────────────────────────────────────────────────
+const SHRINKAGE_C = 3
+
+function notaAjustada(notaBruta, nPartidas) {
+  return (SHRINKAGE_C * 6.0 + nPartidas * notaBruta) / (SHRINKAGE_C + nPartidas)
+}
+
 async function statsDodia(data) {
   const { rows } = await pool.query(`
     SELECT j.id, j.nome, j.posicao, j.firepower,
@@ -153,11 +211,13 @@ async function statsDodia(data) {
            COALESCE(SUM(jc.faltas), 0)::int            AS faltas,
            COALESCE(SUM(jc.amarelos), 0)::int          AS amarelos,
            COALESCE(SUM(jc.vermelhos), 0)::int         AS vermelhos,
+           COALESCE(SUM(jc.dribles), 0)::int           AS dribles,
            ROUND(AVG(
              6.0
              + jc.gols         * 2.0
              + jc.assistencias * 1.0
              + CASE WHEN j.posicao IN ('DEF', 'MEI') THEN jc.desarmes * 0.5 ELSE 0 END
+             + CASE WHEN j.posicao IN ('ATA', 'MEI') THEN jc.dribles  * 0.3 ELSE 0 END
              - jc.falhas       * 0.3
              - jc.faltas       * 0.5
              - jc.amarelos     * 1.0
@@ -167,7 +227,7 @@ async function statsDodia(data) {
     JOIN confrontos c           ON c.fk_partida  = p.id
     JOIN jogadores_confronto jc ON jc.fk_confronto = c.id
     JOIN jogadores j            ON j.id           = jc.fk_jogador
-    WHERE p.data = $1
+    WHERE p.data = $1 AND p.is_test IS NOT TRUE
     GROUP BY j.id, j.nome, j.posicao, j.firepower
   `, [data])
   return rows.map(p => ({
@@ -190,13 +250,13 @@ app.get('/dia/:data/confrontos', async (req, res) => {
       SELECT c.id, c.sequencia, c.placar_a, c.placar_b, c.resultado,
              c.nome_time_a, c.nome_time_b,
              jc.time, jc.gols, jc.assistencias, jc.falhas,
-             jc.desarmes, jc.faltas, jc.amarelos, jc.vermelhos,
+             jc.desarmes, jc.faltas, jc.amarelos, jc.vermelhos, jc.dribles,
              j.nome, j.posicao
       FROM partidas p
       JOIN confrontos c           ON c.fk_partida   = p.id
       JOIN jogadores_confronto jc ON jc.fk_confronto = c.id
       JOIN jogadores j            ON j.id            = jc.fk_jogador
-      WHERE p.data = $1
+      WHERE p.data = $1 AND p.is_test IS NOT TRUE
       ORDER BY c.sequencia, jc.time
     `, [req.params.data])
     const map = {}
@@ -211,6 +271,7 @@ app.get('/dia/:data/confrontos', async (req, res) => {
         gols: r.gols || 0, assistencias: r.assistencias || 0, falhas: r.falhas || 0,
         desarmes: r.desarmes || 0, faltas: r.faltas || 0,
         amarelos: r.amarelos || 0, vermelhos: r.vermelhos || 0,
+        dribles: r.dribles || 0,
       }
       if (r.time === 'A') map[r.id].timeA.push(j)
       else map[r.id].timeB.push(j)
@@ -236,7 +297,7 @@ app.get('/dia/:data/times', async (req, res) => {
                SUM(CASE WHEN resultado = 'B'      THEN 1 ELSE 0 END) AS derrotas,
                SUM(placar_a - placar_b) AS saldo
         FROM confrontos c JOIN partidas p ON p.id = c.fk_partida
-        WHERE p.data = $1 AND nome_time_a IS NOT NULL
+        WHERE p.data = $1 AND p.is_test IS NOT TRUE AND nome_time_a IS NOT NULL
         GROUP BY nome_time_a
         UNION ALL
         SELECT nome_time_b,
@@ -246,7 +307,7 @@ app.get('/dia/:data/times', async (req, res) => {
                SUM(CASE WHEN resultado = 'A'      THEN 1 ELSE 0 END),
                SUM(placar_b - placar_a)
         FROM confrontos c JOIN partidas p ON p.id = c.fk_partida
-        WHERE p.data = $1 AND nome_time_b IS NOT NULL
+        WHERE p.data = $1 AND p.is_test IS NOT TRUE AND nome_time_b IS NOT NULL
         GROUP BY nome_time_b
       ) t
       GROUP BY nome_time
@@ -263,8 +324,8 @@ app.post('/dia/:data/encerrar', async (req, res) => {
     if (players.length === 0)
       return res.status(400).json({ error: 'Nenhuma partida encontrada nessa data.' })
     const updates = await Promise.all(players.map(async p => {
-      const delta = Math.round((p.nota - 6) * 2)
-      const novoFp = Math.max(0, Math.min(100, p.firepower + delta))
+      const delta    = Math.round((notaAjustada(p.nota, p.partidas) - 6) * 2)
+      const novoFp   = Math.max(0, Math.min(100, p.firepower + delta))
       await pool.query('UPDATE jogadores SET firepower = $1 WHERE id = $2', [novoFp, p.id])
       return { id: p.id, nome: p.nome, nota: p.nota, delta, firepowerAntes: p.firepower, firepowerDepois: novoFp }
     }))
