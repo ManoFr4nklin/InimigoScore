@@ -1,22 +1,35 @@
 import { useState } from 'react'
 import './Login.css'
-
-const USUARIO = 'admin'
-const SENHA   = 'admin'
+import { API, setToken } from '../api.js'
 
 export default function Login({ onLogin }) {
   const [usuario, setUsuario] = useState('')
   const [senha, setSenha]     = useState('')
   const [erro, setErro]       = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  function entrar(e) {
+  async function entrar(e) {
     e.preventDefault()
-    if (usuario === USUARIO && senha === SENHA) {
-      localStorage.setItem('inis_auth', '1')
+    setLoading(true)
+    setErro(false)
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, senha })
+      })
+      if (!res.ok) {
+        setErro(true)
+        setSenha('')
+        return
+      }
+      const { token } = await res.json()
+      setToken(token)
       onLogin()
-    } else {
+    } catch {
       setErro(true)
-      setSenha('')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -33,6 +46,7 @@ export default function Login({ onLogin }) {
             value={usuario}
             onChange={e => { setUsuario(e.target.value); setErro(false) }}
             autoComplete="username"
+            disabled={loading}
           />
           <input
             className="inp"
@@ -41,9 +55,12 @@ export default function Login({ onLogin }) {
             value={senha}
             onChange={e => { setSenha(e.target.value); setErro(false) }}
             autoComplete="current-password"
+            disabled={loading}
           />
           {erro && <p className="login-erro">Usuário ou senha incorretos.</p>}
-          <button className="btn-login" type="submit">ENTRAR</button>
+          <button className="btn-login" type="submit" disabled={loading}>
+            {loading ? 'ENTRANDO...' : 'ENTRAR'}
+          </button>
         </form>
       </div>
     </div>

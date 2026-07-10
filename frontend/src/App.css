@@ -68,6 +68,44 @@
   color: #ff4444;
 }
 
+.nav-teste {
+  font-size: 13px;
+  padding: 6px 12px;
+  margin-left: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  align-self: center;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.nav-teste:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.nav-teste-on {
+  color: #ff9800;
+  border-color: #ff9800;
+  background: rgba(255, 152, 0, 0.08);
+}
+
+.nav-teste-on:hover {
+  color: #ff9800;
+  border-color: #ff9800;
+}
+
+.teste-banner {
+  background: rgba(255, 152, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 152, 0, 0.3);
+  color: #ff9800;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 6px 0;
+}
+
 .app-main {
   flex: 1;
   padding: 24px 20px 40px;

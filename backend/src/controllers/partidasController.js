@@ -1,11 +1,12 @@
 import db from '../database/db.js'
 
 export async function criarPartida(req, res) {
-  const data = req.body?.data || new Date().toISOString().split('T')[0]
+  const hoje   = new Date().toISOString().split('T')[0]
+  const isTest = req.body?.is_test === true
   try {
     const { rows } = await db.query(
-      'INSERT INTO partidas (data) VALUES ($1) RETURNING *',
-      [data]
+      'INSERT INTO partidas (data, is_test) VALUES ($1, $2) RETURNING *',
+      [hoje, isTest]
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -36,30 +37,40 @@ export async function addJogadoresConfronto(req, res) {
 
   const values = []
   const placeholders = req.body.map((j, idx) => {
-    const base = idx * 10
+    const base = idx * 11
     values.push(
       confrontoId,
       j.fk_jogador,
       j.time,
-      j.gols        || 0,
+      j.gols         || 0,
       j.assistencias || 0,
-      j.falhas      || 0,
-      j.desarmes    || 0,
-      j.faltas      || 0,
-      j.amarelos    || 0,
-      j.vermelhos   || 0
+      j.falhas       || 0,
+      j.desarmes     || 0,
+      j.faltas       || 0,
+      j.amarelos     || 0,
+      j.vermelhos    || 0,
+      j.dribles      || 0
     )
-    return `($${base+1},$${base+2},$${base+3},$${base+4},$${base+5},$${base+6},$${base+7},$${base+8},$${base+9},$${base+10})`
+    return `($${base+1},$${base+2},$${base+3},$${base+4},$${base+5},$${base+6},$${base+7},$${base+8},$${base+9},$${base+10},$${base+11})`
   })
 
   try {
     const { rows } = await db.query(
       `INSERT INTO jogadores_confronto
-         (fk_confronto, fk_jogador, time, gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos)
+         (fk_confronto, fk_jogador, time, gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos, dribles)
        VALUES ${placeholders.join(',')} RETURNING *`,
       values
     )
     res.status(201).json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+export async function resetTestData(req, res) {
+  try {
+    const { rowCount } = await db.query('DELETE FROM partidas WHERE is_test = true')
+    res.json({ ok: true, partidas_removidas: rowCount })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import './Partida.css'
-import { API } from '../api.js'
+import { apiFetch } from '../api.js'
 
 function getStat(stats, jId, campo) {
   return (stats[jId] || {})[campo] || 0
 }
 
 function setStat(prev, jId, campo, val) {
-  const curr = prev[jId] || { gols: 0, assists: 0, falhas: 0, desarmes: 0, faltas: 0, amarelos: 0, vermelhos: 0 }
+  const curr = prev[jId] || { gols: 0, assists: 0, falhas: 0, desarmes: 0, faltas: 0, amarelos: 0, vermelhos: 0, dribles: 0 }
   return { ...prev, [jId]: { ...curr, [campo]: Math.max(0, val) } }
 }
 
-export default function Partida({ times, setTimes, goleiros = [] }) {
+export default function Partida({ times, setTimes, goleiros = [], testMode = false }) {
   const [partidaId, setPartidaId]           = useState(null)
   const [sequencia, setSequencia]           = useState(1)
   const [jogando, setJogando]               = useState(null)
@@ -76,6 +76,8 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
   function removeAmarelo(jId) { setStats(prev => setStat(prev, jId, 'amarelos', getStat(prev, jId, 'amarelos') - 1)) }
   function addVermelho(jId)    { setStats(prev => setStat(prev, jId, 'vermelhos', getStat(prev, jId, 'vermelhos') + 1)) }
   function removeVermelho(jId) { setStats(prev => setStat(prev, jId, 'vermelhos', getStat(prev, jId, 'vermelhos') - 1)) }
+  function addDrible(jId)    { setStats(prev => setStat(prev, jId, 'dribles', getStat(prev, jId, 'dribles') + 1)) }
+  function removeDrible(jId) { setStats(prev => setStat(prev, jId, 'dribles', getStat(prev, jId, 'dribles') - 1)) }
 
   // ─── Iniciar ───────────────────────────────────────────────────────────────
   async function iniciar() {
@@ -83,7 +85,10 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
     let pId = partidaId
     if (!pId) {
       try {
-        const res = await fetch(`${API}/partidas`, { method: 'POST' })
+        const res = await apiFetch('/partidas', {
+          method: 'POST',
+          body: JSON.stringify({ is_test: testMode })
+        })
         const d   = await res.json()
         pId = d.id
         setPartidaId(pId)
@@ -148,9 +153,8 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
   async function salvar(placarFinal, resDB, currentStats, currentGoleiros) {
     try {
       const [iA, iB] = jogando
-      const rc = await fetch(`${API}/partidas/confrontos`, {
+      const rc = await apiFetch('/partidas/confrontos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fk_partida:  partidaId,
           sequencia,
@@ -178,16 +182,16 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
             desarmes:     s.desarmes  || 0,
             faltas:       s.faltas    || 0,
             amarelos:     s.amarelos  || 0,
-            vermelhos:    s.vermelhos || 0
+            vermelhos:    s.vermelhos || 0,
+            dribles:      s.dribles   || 0
           })
         })
       }
       addTime(times[iA], 0, 'A')
       addTime(times[iB], 1, 'B')
 
-      await fetch(`${API}/partidas/confrontos/${confronto.id}/jogadores`, {
+      await apiFetch(`/partidas/confrontos/${confronto.id}/jogadores`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
     } catch (e) { console.error('Erro ao salvar:', e) }
@@ -331,7 +335,7 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
     const placar   = computePlacar()
 
     const renderTime = (time, slot) => {
-      const jogs   = getTeamJogs(slot)
+      const jogs   = getTeamJogs(slot).filter(j => j.posicao !== 'GOL')
       const tGoals = teamGoals(slot)
       return (
         <div className="time-jogo-card" style={{ '--cor': time.cor }}>
@@ -341,6 +345,7 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
             const a   = getStat(stats, j.id, 'assists')
             const f   = getStat(stats, j.id, 'falhas')
             const d   = getStat(stats, j.id, 'desarmes')
+            const dr  = getStat(stats, j.id, 'dribles')
             const ft  = getStat(stats, j.id, 'faltas')
             const am  = getStat(stats, j.id, 'amarelos')
             const ve  = getStat(stats, j.id, 'vermelhos')
@@ -351,41 +356,72 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
                 <span className="psr-nome">{j.nome}</span>
                 <div className="psr-counters">
                   <div className="counter-group">
-                    <button className="ctr-btn" onClick={() => removeGol(j.id)} disabled={g <= 0}>−</button>
-                    <span className="ctr-val">⚽{g}</span>
-                    <button className="ctr-btn" onClick={() => addGol(j.id, slot)} disabled={placar[slot] >= 2}>+</button>
+                    <span className="ctr-label">gols</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeGol(j.id)} disabled={g <= 0}>−</button>
+                      <span className="ctr-val">{g}</span>
+                      <button className="ctr-btn" onClick={() => addGol(j.id, slot)} disabled={placar[slot] >= 2}>+</button>
+                    </div>
                   </div>
                   <div className="counter-group">
-                    <button className="ctr-btn" onClick={() => removeAssist(j.id)} disabled={a <= 0}>−</button>
-                    <span className="ctr-val">🤝{a}</span>
-                    <button className="ctr-btn" onClick={() => addAssist(j.id, slot)} disabled={a >= maxA}>+</button>
+                    <span className="ctr-label">assist</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeAssist(j.id)} disabled={a <= 0}>−</button>
+                      <span className="ctr-val">{a}</span>
+                      <button className="ctr-btn" onClick={() => addAssist(j.id, slot)} disabled={a >= maxA}>+</button>
+                    </div>
                   </div>
                   <div className="counter-group">
-                    <button className="ctr-btn" onClick={() => removeFalha(j.id)} disabled={f <= 0}>−</button>
-                    <span className="ctr-val">⚠{f}</span>
-                    <button className="ctr-btn" onClick={() => addFalha(j.id)}>+</button>
+                    <span className="ctr-label">falhas</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeFalha(j.id)} disabled={f <= 0}>−</button>
+                      <span className="ctr-val">{f}</span>
+                      <button className="ctr-btn" onClick={() => addFalha(j.id)}>+</button>
+                    </div>
                   </div>
                   {(j.posicao === 'DEF' || j.posicao === 'MEI') && (
                     <div className="counter-group">
-                      <button className="ctr-btn" onClick={() => removeDesarme(j.id)} disabled={d <= 0}>−</button>
-                      <span className="ctr-val">⚔{d}</span>
-                      <button className="ctr-btn" onClick={() => addDesarme(j.id)}>+</button>
+                      <span className="ctr-label">desarm</span>
+                      <div className="ctr-row">
+                        <button className="ctr-btn" onClick={() => removeDesarme(j.id)} disabled={d <= 0}>−</button>
+                        <span className="ctr-val">{d}</span>
+                        <button className="ctr-btn" onClick={() => addDesarme(j.id)}>+</button>
+                      </div>
+                    </div>
+                  )}
+                  {(j.posicao === 'ATA' || j.posicao === 'MEI') && (
+                    <div className="counter-group">
+                      <span className="ctr-label">drible</span>
+                      <div className="ctr-row">
+                        <button className="ctr-btn" onClick={() => removeDrible(j.id)} disabled={dr <= 0}>−</button>
+                        <span className="ctr-val">{dr}</span>
+                        <button className="ctr-btn" onClick={() => addDrible(j.id)}>+</button>
+                      </div>
                     </div>
                   )}
                   <div className="counter-group">
-                    <button className="ctr-btn" onClick={() => removeFalta(j.id)} disabled={ft <= 0}>−</button>
-                    <span className="ctr-val">🦵{ft}</span>
-                    <button className="ctr-btn" onClick={() => addFalta(j.id)}>+</button>
+                    <span className="ctr-label">faltas</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeFalta(j.id)} disabled={ft <= 0}>−</button>
+                      <span className="ctr-val">{ft}</span>
+                      <button className="ctr-btn" onClick={() => addFalta(j.id)}>+</button>
+                    </div>
                   </div>
                   <div className="counter-group">
-                    <button className="ctr-btn" onClick={() => removeAmarelo(j.id)} disabled={am <= 0}>−</button>
-                    <span className="ctr-val">🟨{am}</span>
-                    <button className="ctr-btn" onClick={() => addAmarelo(j.id)}>+</button>
+                    <span className="ctr-label">amarelo</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeAmarelo(j.id)} disabled={am <= 0}>−</button>
+                      <span className="ctr-val">{am}</span>
+                      <button className="ctr-btn" onClick={() => addAmarelo(j.id)}>+</button>
+                    </div>
                   </div>
                   <div className="counter-group">
-                    <button className="ctr-btn" onClick={() => removeVermelho(j.id)} disabled={ve <= 0}>−</button>
-                    <span className="ctr-val">🟥{ve}</span>
-                    <button className="ctr-btn" onClick={() => addVermelho(j.id)}>+</button>
+                    <span className="ctr-label">vermelho</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeVermelho(j.id)} disabled={ve <= 0}>−</button>
+                      <span className="ctr-val">{ve}</span>
+                      <button className="ctr-btn" onClick={() => addVermelho(j.id)}>+</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -484,6 +520,18 @@ export default function Partida({ times, setTimes, goleiros = [] }) {
       <button className="btn-reset" onClick={resetar}>
         Refazer Sorteio
       </button>
+
+      {testMode && (
+        <button
+          className="btn-reset btn-reset-teste"
+          onClick={async () => {
+            await apiFetch('/partidas/reset-test', { method: 'DELETE' })
+            alert('Dados de teste removidos.')
+          }}
+        >
+          Limpar dados de teste
+        </button>
+      )}
     </div>
   )
 }

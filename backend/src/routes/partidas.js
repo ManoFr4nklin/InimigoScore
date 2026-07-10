@@ -1,12 +1,13 @@
 import { Router } from 'express'
-import { criarPartida, criarConfronto, addJogadoresConfronto } from '../controllers/partidasController.js'
+import { criarPartida, criarConfronto, addJogadoresConfronto, resetTestData } from '../controllers/partidasController.js'
 import db from '../database/db.js'
 
 const router = Router()
 
-router.post('/', criarPartida)
-router.post('/confrontos', criarConfronto)
+router.post('/',                         criarPartida)
+router.post('/confrontos',               criarConfronto)
 router.post('/confrontos/:id/jogadores', addJogadoresConfronto)
+router.delete('/reset-test',             resetTestData)
 
 router.delete('/:id', async (req, res) => {
   const { id } = req.params

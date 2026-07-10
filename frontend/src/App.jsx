@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import { getToken, clearToken } from './api.js'
 import Login from './pages/Login'
 import Jogadores from './pages/Jogadores'
 import Sorteio from './pages/Sorteio'
@@ -14,17 +15,18 @@ const PAGES = [
 ]
 
 export default function App() {
-  const [logado, setLogado]     = useState(() => localStorage.getItem('inis_auth') === '1')
-  const [page, setPage]         = useState('jogadores')
-  const [times, setTimes]       = useState(null)
-  const [goleiros, setGoleiros] = useState([])
+  const [logado, setLogado]       = useState(() => !!getToken())
+  const [page, setPage]           = useState('jogadores')
+  const [times, setTimes]         = useState(null)
+  const [goleiros, setGoleiros]   = useState([])
+  const [testMode, setTestMode]   = useState(false)
 
   if (!logado) {
     return <Login onLogin={() => setLogado(true)} />
   }
 
   function sair() {
-    localStorage.removeItem('inis_auth')
+    clearToken()
     setLogado(false)
   }
 
@@ -42,15 +44,25 @@ export default function App() {
               {p.label}
             </button>
           ))}
+          <button
+            className={`nav-btn nav-teste${testMode ? ' nav-teste-on' : ''}`}
+            onClick={() => setTestMode(m => !m)}
+            title="Modo de teste — dados não afetam o ranking real"
+          >
+            TESTE
+          </button>
           <button className="nav-btn nav-sair" onClick={sair} title="Sair">⏏</button>
         </nav>
       </header>
+      {testMode && (
+        <div className="teste-banner">
+          MODO TESTE — partidas não afetam o ranking
+        </div>
+      )}
       <main className="app-main">
         {page === 'jogadores'  && <Jogadores />}
         {page === 'sorteio'   && <Sorteio setTimes={setTimes} setGoleiros={setGoleiros} setPage={setPage} />}
-        <div style={{ display: page === 'partida' ? 'block' : 'none' }}>
-          <Partida times={times} setTimes={setTimes} goleiros={goleiros} />
-        </div>
+        {page === 'partida'   && <Partida times={times} setTimes={setTimes} goleiros={goleiros} testMode={testMode} />}
         {page === 'resultados' && <Resultados />}
       </main>
     </div>
