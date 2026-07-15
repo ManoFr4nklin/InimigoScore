@@ -53,6 +53,39 @@ app.use((req, res, next) => {
   catch { res.status(401).json({ error: 'Token inválido ou expirado' }) }
 })
 
+// ── Sorteio (sync entre dispositivos) ─────────────────────
+app.get('/sorteio', async (req, res) => {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS sorteio_atual (
+      id SMALLINT PRIMARY KEY DEFAULT 1,
+      times JSONB,
+      goleiros JSONB,
+      atualizado_em TIMESTAMPTZ DEFAULT NOW()
+    )`)
+    const { rows } = await pool.query('SELECT times, goleiros FROM sorteio_atual WHERE id=1')
+    const row = rows[0]
+    res.json(row?.times ? { times: row.times, goleiros: row.goleiros || [] } : null)
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/sorteio', async (req, res) => {
+  try {
+    const { times, goleiros } = req.body
+    await pool.query(`
+      INSERT INTO sorteio_atual (id, times, goleiros, atualizado_em) VALUES (1, $1, $2, NOW())
+      ON CONFLICT (id) DO UPDATE SET times=$1, goleiros=$2, atualizado_em=NOW()
+    `, [JSON.stringify(times), JSON.stringify(goleiros || [])])
+    res.json({ ok: true })
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete('/sorteio', async (req, res) => {
+  try {
+    await pool.query('UPDATE sorteio_atual SET times=NULL, goleiros=NULL WHERE id=1')
+    res.json({ ok: true })
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
 // ── Jogadores ──────────────────────────────────────────────
 app.get('/jogadores', async (req, res) => {
   try {

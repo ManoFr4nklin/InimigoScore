@@ -246,6 +246,10 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
   function confirmar() {
     setTimes(timesLocal)
     setGoleiros(goleirosList)
+    apiFetch('/sorteio', {
+      method: 'POST',
+      body: JSON.stringify({ times: timesLocal, goleiros: goleirosList })
+    }).catch(() => {})
     setPage('partida')
   }
 

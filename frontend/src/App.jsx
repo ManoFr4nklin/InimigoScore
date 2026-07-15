@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
-import { getToken, clearToken } from './api.js'
+import { getToken, clearToken, apiFetch } from './api.js'
 import Login from './pages/Login'
 import Jogadores from './pages/Jogadores'
 import Sorteio from './pages/Sorteio'
@@ -28,10 +28,26 @@ export default function App() {
   })
   const [testMode, setTestMode]   = useState(false)
 
+  useEffect(() => {
+    if (!logado) return
+    apiFetch('/sorteio').then(r => r.json()).then(data => {
+      if (data?.times) {
+        setTimesState(data.times)
+        localStorage.setItem(TIMES_KEY, JSON.stringify(data.times))
+        setGoleirosState(data.goleiros || [])
+        localStorage.setItem(GOLEIROS_KEY, JSON.stringify(data.goleiros || []))
+      }
+    }).catch(() => {})
+  }, [logado])
+
   function setTimes(val) {
     setTimesState(val)
-    if (val === null) localStorage.removeItem(TIMES_KEY)
-    else localStorage.setItem(TIMES_KEY, JSON.stringify(val))
+    if (val === null) {
+      localStorage.removeItem(TIMES_KEY)
+      apiFetch('/sorteio', { method: 'DELETE' }).catch(() => {})
+    } else {
+      localStorage.setItem(TIMES_KEY, JSON.stringify(val))
+    }
   }
 
   function setGoleiros(val) {
