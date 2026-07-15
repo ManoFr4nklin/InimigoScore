@@ -12,6 +12,11 @@ const NOMES_ZUADOS = [
   'Jahia', 'Prantos', 'Merdavaí Futebosta Estrume', 'FlorminenC', 'Epstein FC',
 ]
 
+function calcOverall(jogadores) {
+  if (!jogadores.length) return '–'
+  return Math.round(jogadores.reduce((s, j) => s + (j.firepower ?? 60), 0) / jogadores.length)
+}
+
 function sortearNomes() {
   return [...NOMES_ZUADOS].sort(() => Math.random() - 0.5).slice(0, 4)
 }
@@ -105,36 +110,19 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
     const gols  = jogs.filter(j => j.posicao === 'GOL')
     const linha = jogs.filter(j => j.posicao !== 'GOL')
 
-    const byFP = (a, b) => (b.firepower ?? 60) - (a.firepower ?? 60)
-
     const nomesZuados = sortearNomes()
     const newTimes = Array.from({ length: 4 }, (_, i) => ({
       id: i, nome: nomesZuados[i], cor: TIME_CORES[i], jogadores: []
     }))
 
-    // Snake draft contínuo — primeiro 1 de cada posição, depois os restantes
-    let snakeIdx = 0
-    const usados = new Set()
-
-    function nextIdx() {
-      const round = Math.floor(snakeIdx / 4)
-      const pos   = snakeIdx % 4
-      snakeIdx++
-      return round % 2 === 0 ? pos : 3 - pos
+    // Greedy por FP: cada jogador vai pro time com menor total no momento
+    const sorted = [...linha].sort((a, b) => (b.firepower ?? 60) - (a.firepower ?? 60))
+    const totais = [0, 0, 0, 0]
+    for (const j of sorted) {
+      const minIdx = totais.indexOf(Math.min(...totais))
+      newTimes[minIdx].jogadores.push(j)
+      totais[minIdx] += j.firepower ?? 60
     }
-
-    for (const pos of ['ATA', 'DEF', 'MEI']) {
-      const grupo = linha.filter(j => j.posicao === pos).sort(byFP)
-      grupo.slice(0, 4).forEach(j => {
-        newTimes[nextIdx()].jogadores.push(j)
-        usados.add(j.id)
-      })
-    }
-
-    // Restantes de qualquer posição
-    linha.filter(j => !usados.has(j.id)).sort(byFP).forEach(j => {
-      newTimes[nextIdx()].jogadores.push(j)
-    })
 
     setGoleirosList(gols)
     setBench(null)
@@ -305,7 +293,9 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
                   title="Clique para renomear"
                   onClick={e => { e.stopPropagation(); setEditingTimeIdx(timeIdx); setEditingNome(time.nome) }}
                 >
-                  {time.nome} ✎
+                  {time.nome}
+                  <span className="time-overall">{calcOverall(time.jogadores)}</span>
+                  {' ✎'}
                 </h3>
               )}
               {time.jogadores.map(j => (
