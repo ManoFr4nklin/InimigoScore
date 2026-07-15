@@ -115,13 +115,73 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
       id: i, nome: nomesZuados[i], cor: TIME_CORES[i], jogadores: []
     }))
 
-    // Greedy por FP: cada jogador vai pro time com menor total no momento
-    const sorted = [...linha].sort((a, b) => (b.firepower ?? 60) - (a.firepower ?? 60))
+    const fp = j => j.firepower ?? 60
+    const byFP = (a, b) => fp(b) - fp(a)
     const totais = [0, 0, 0, 0]
-    for (const j of sorted) {
-      const minIdx = totais.indexOf(Math.min(...totais))
-      newTimes[minIdx].jogadores.push(j)
-      totais[minIdx] += j.firepower ?? 60
+    const usados = new Set()
+
+    // Fase 1 — seed 1 jogador de cada posição por time (greedy dentro de cada posição)
+    for (const pos of ['ATA', 'DEF', 'MEI']) {
+      const grupo = linha.filter(j => j.posicao === pos).sort(byFP)
+      grupo.slice(0, 4).forEach(j => {
+        const idx = totais.indexOf(Math.min(...totais))
+        newTimes[idx].jogadores.push(j)
+        totais[idx] += fp(j)
+        usados.add(j.id)
+      })
+    }
+
+    // Fase 2 — restantes (excesso de posição ou posições extra), greedy
+    linha.filter(j => !usados.has(j.id)).sort(byFP).forEach(j => {
+      const idx = totais.indexOf(Math.min(...totais))
+      newTimes[idx].jogadores.push(j)
+      totais[idx] += fp(j)
+    })
+
+    // Fase 3 — ajuste de gap: tenta trocas para manter diferença de overall ≤ 5
+    const GAP_MAX = 5
+    const ovr = t => t.jogadores.length
+      ? t.jogadores.reduce((s, j) => s + fp(j), 0) / t.jogadores.length
+      : 0
+
+    let improved = true
+    while (improved) {
+      improved = false
+      const ovrs = newTimes.map(ovr)
+      const maxOvr = Math.max(...ovrs)
+      const minOvr = Math.min(...ovrs)
+      if (maxOvr - minOvr <= GAP_MAX) break
+
+      const mi = ovrs.indexOf(maxOvr) // time mais forte
+      const ni = ovrs.indexOf(minOvr) // time mais fraco
+
+      let bestGain = 0, bestSwap = null
+      for (const a of newTimes[mi].jogadores) {
+        for (const b of newTimes[ni].jogadores) {
+          if (fp(a) === fp(b)) continue
+          // Respeitar posição: não remove o único jogador de uma posição
+          // a menos que o que entra seja da mesma posição
+          const aUnico = newTimes[mi].jogadores.filter(j => j.posicao === a.posicao).length === 1
+          const bUnico = newTimes[ni].jogadores.filter(j => j.posicao === b.posicao).length === 1
+          if (aUnico && a.posicao !== b.posicao) continue
+          if (bUnico && a.posicao !== b.posicao) continue
+
+          const newMaxOvr = (totais[mi] - fp(a) + fp(b)) / newTimes[mi].jogadores.length
+          const newMinOvr = (totais[ni] - fp(b) + fp(a)) / newTimes[ni].jogadores.length
+          const newGap = Math.max(newMaxOvr, newMinOvr) - Math.min(newMaxOvr, newMinOvr)
+          const gain = (maxOvr - minOvr) - newGap
+          if (gain > bestGain) { bestGain = gain; bestSwap = { a, b, mi, ni } }
+        }
+      }
+
+      if (bestSwap) {
+        const { a, b, mi: mIdx, ni: nIdx } = bestSwap
+        newTimes[mIdx].jogadores = newTimes[mIdx].jogadores.map(j => j.id === a.id ? b : j)
+        newTimes[nIdx].jogadores = newTimes[nIdx].jogadores.map(j => j.id === b.id ? a : j)
+        totais[mIdx] = totais[mIdx] - fp(a) + fp(b)
+        totais[nIdx] = totais[nIdx] - fp(b) + fp(a)
+        improved = true
+      }
     }
 
     setGoleirosList(gols)
