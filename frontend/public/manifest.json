@@ -1,0 +1,17 @@
+{
+  "name": "InimigoScore",
+  "short_name": "InimigoScore",
+  "description": "Placar e estatísticas da pelada",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0c0e",
+  "theme_color": "#00e676",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

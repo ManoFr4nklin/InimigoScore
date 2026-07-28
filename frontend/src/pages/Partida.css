@@ -606,6 +606,17 @@
   cursor: pointer;
 }
 
+.sync-banner {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  color: #ffc107;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .empty-state {
   text-align: center;
   color: var(--text-dim);

@@ -30,6 +30,8 @@ export default function App() {
 
   useEffect(() => {
     if (!logado) return
+    // Só sincroniza do servidor se não houver dado local (evita sobrescrever cores/times do sorteio atual)
+    if (localStorage.getItem(TIMES_KEY)) return
     apiFetch('/sorteio').then(r => r.json()).then(data => {
       if (data?.times) {
         setTimesState(data.times)
@@ -96,7 +98,9 @@ export default function App() {
       <main className="app-main">
         {page === 'jogadores'  && <Jogadores />}
         {page === 'sorteio'   && <Sorteio setTimes={setTimes} setGoleiros={setGoleiros} setPage={setPage} />}
-        {page === 'partida'   && <Partida times={times} setTimes={setTimes} goleiros={goleiros} testMode={testMode} />}
+        <div style={{ display: page === 'partida' ? 'block' : 'none' }}>
+          <Partida times={times} setTimes={setTimes} goleiros={goleiros} testMode={testMode} />
+        </div>
         {page === 'resultados' && <Resultados />}
       </main>
     </div>

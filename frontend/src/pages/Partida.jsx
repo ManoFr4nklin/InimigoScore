@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './Partida.css'
 import { apiFetch } from '../api.js'
+
+const QUEUE_KEY = 'inis_sync_queue'
 
 function getStat(stats, jId, campo) {
   return (stats[jId] || {})[campo] || 0
@@ -24,10 +26,66 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
   const [resultado, setResultado]           = useState(null)
   const [iniciando, setIniciando]           = useState([])
   const [proximoJogando, setProximoJogando] = useState([])
+  const [syncPending, setSyncPending]       = useState(
+    () => JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]').length > 0
+  )
+
+  // ─── Fila offline ──────────────────────────────────────────────────────────
+  function enqueue(item) {
+    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
+    q.push(item)
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(q))
+    setSyncPending(true)
+  }
+
+  async function flushQueue() {
+    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
+    if (!q.length) return
+    let i = 0
+    for (; i < q.length; i++) {
+      const item = q[i]
+      try {
+        let pId = item.partida_id
+        if (!pId) {
+          const r = await apiFetch('/partidas', {
+            method: 'POST',
+            body: JSON.stringify({ data: item.data, is_test: item.is_test })
+          })
+          if (!r.ok) throw new Error('partida')
+          pId = (await r.json()).id
+        }
+        const rc = await apiFetch('/partidas/confrontos', {
+          method: 'POST',
+          body: JSON.stringify({ fk_partida: pId, ...item.confronto })
+        })
+        if (!rc.ok) throw new Error('confronto')
+        const { id: confrontoId } = await rc.json()
+        const jr = await apiFetch(`/partidas/confrontos/${confrontoId}/jogadores`, {
+          method: 'POST',
+          body: JSON.stringify(item.jogadores)
+        })
+        if (!jr.ok) throw new Error('jogadores')
+      } catch {
+        break
+      }
+    }
+    const remaining = q.slice(i)
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining))
+    setSyncPending(remaining.length > 0)
+  }
+
+  useEffect(() => {
+    flushQueue()
+    window.addEventListener('online', flushQueue)
+    return () => window.removeEventListener('online', flushQueue)
+  }, [])
 
   if (!times) {
     return (
       <div className="partida-page">
+        {syncPending && (
+          <div className="sync-banner">⏳ Confrontos pendentes — sincronizando ao voltar a internet...</div>
+        )}
         <div className="empty-state">Faça o sorteio de times na aba Sorteio primeiro.</div>
       </div>
     )
@@ -92,7 +150,7 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
         const d   = await res.json()
         pId = d.id
         setPartidaId(pId)
-      } catch (e) { console.error(e); return }
+      } catch { console.warn('Offline: partida será criada ao sincronizar') }
     }
     const fora = [0, 1, 2, 3].filter(i => !iniciando.includes(i))
     setJogando(iniciando)
@@ -150,51 +208,78 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
   }
 
   // ─── Salvar no DB ──────────────────────────────────────────────────────────
+  function buildPayload(currentStats, currentGoleiros, iA, iB) {
+    const payload = []
+    const addTime = (time, slot, letra) => {
+      const gol   = currentGoleiros[slot]
+      const todos = [...(gol ? [gol] : []), ...time.jogadores]
+      todos.forEach(j => {
+        const s = currentStats[j.id] || {}
+        payload.push({
+          fk_jogador:   j.id,
+          time:         letra,
+          gols:         s.gols      || 0,
+          assistencias: s.assists   || 0,
+          falhas:       s.falhas    || 0,
+          desarmes:     s.desarmes  || 0,
+          faltas:       s.faltas    || 0,
+          amarelos:     s.amarelos  || 0,
+          vermelhos:    s.vermelhos || 0,
+          dribles:      s.dribles   || 0
+        })
+      })
+    }
+    addTime(times[iA], 0, 'A')
+    addTime(times[iB], 1, 'B')
+    return payload
+  }
+
   async function salvar(placarFinal, resDB, currentStats, currentGoleiros) {
+    const [iA, iB]      = jogando
+    const today         = new Date().toISOString().split('T')[0]
+    const confrontoData = {
+      sequencia,
+      placar_a:    placarFinal[0],
+      placar_b:    placarFinal[1],
+      resultado:   resDB,
+      nome_time_a: times[iA].nome,
+      nome_time_b: times[iB].nome,
+    }
+    const jogadoresPayload = buildPayload(currentStats, currentGoleiros, iA, iB)
+
     try {
-      const [iA, iB] = jogando
+      let pId = partidaId
+      if (!pId) {
+        const r = await apiFetch('/partidas', {
+          method: 'POST',
+          body: JSON.stringify({ data: today, is_test: testMode })
+        })
+        if (!r.ok) throw new Error('partida')
+        const d = await r.json()
+        pId = d.id
+        setPartidaId(pId)
+      }
       const rc = await apiFetch('/partidas/confrontos', {
         method: 'POST',
-        body: JSON.stringify({
-          fk_partida:  partidaId,
-          sequencia,
-          placar_a:    placarFinal[0],
-          placar_b:    placarFinal[1],
-          resultado:   resDB,
-          nome_time_a: times[iA].nome,
-          nome_time_b: times[iB].nome
-        })
+        body: JSON.stringify({ fk_partida: pId, ...confrontoData })
       })
-      const confronto = await rc.json()
-
-      const payload = []
-      const addTime = (time, slot, letra) => {
-        const gol  = currentGoleiros[slot]
-        const todos = [...(gol ? [gol] : []), ...time.jogadores]
-        todos.forEach(j => {
-          const s = currentStats[j.id] || {}
-          payload.push({
-            fk_jogador:   j.id,
-            time:         letra,
-            gols:         s.gols      || 0,
-            assistencias: s.assists   || 0,
-            falhas:       s.falhas    || 0,
-            desarmes:     s.desarmes  || 0,
-            faltas:       s.faltas    || 0,
-            amarelos:     s.amarelos  || 0,
-            vermelhos:    s.vermelhos || 0,
-            dribles:      s.dribles   || 0
-          })
-        })
-      }
-      addTime(times[iA], 0, 'A')
-      addTime(times[iB], 1, 'B')
-
-      await apiFetch(`/partidas/confrontos/${confronto.id}/jogadores`, {
+      if (!rc.ok) throw new Error('confronto')
+      const { id: confrontoId } = await rc.json()
+      const jr = await apiFetch(`/partidas/confrontos/${confrontoId}/jogadores`, {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(jogadoresPayload)
       })
-    } catch (e) { console.error('Erro ao salvar:', e) }
+      if (!jr.ok) throw new Error('jogadores')
+    } catch {
+      console.warn('Offline: confronto salvo na fila local')
+      enqueue({
+        data:       today,
+        is_test:    testMode,
+        partida_id: typeof partidaId === 'number' ? partidaId : null,
+        confronto:  confrontoData,
+        jogadores:  jogadoresPayload,
+      })
+    }
   }
 
   // ─── Próximo confronto ─────────────────────────────────────────────────────
@@ -433,6 +518,9 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
 
     return (
       <div className="partida-page">
+        {syncPending && (
+          <div className="sync-banner">⏳ Sem internet — dados salvos localmente</div>
+        )}
         <div className="confronto-header">
           <span className="seq-badge">Confronto #{sequencia}</span>
           <div className="fila-chips">
