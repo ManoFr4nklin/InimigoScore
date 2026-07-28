@@ -1,6 +1,14 @@
-const CACHE = 'inimigoscore-v1'
+const CACHE = 'inimigoscore-v2'
 
-self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('install', e => {
+  self.skipWaiting()
+  // Pré-cacheia o shell do app para funcionar offline imediatamente
+  e.waitUntil(
+    caches.open(CACHE).then(cache =>
+      cache.add(new Request('/', { cache: 'reload' })).catch(() => {})
+    )
+  )
+})
 
 self.addEventListener('activate', e => {
   e.waitUntil(

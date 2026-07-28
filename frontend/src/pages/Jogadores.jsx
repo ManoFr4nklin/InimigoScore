@@ -69,8 +69,20 @@ export default function Jogadores() {
         if (!res.ok) throw new Error(`${res.status}`)
         return res.json()
       })
-      .then(data => setJogadores(Array.isArray(data) ? data : []))
-      .catch(() => setErro('Não foi possível conectar ao servidor.'))
+      .then(data => {
+        const arr = Array.isArray(data) ? data : []
+        setJogadores(arr)
+        localStorage.setItem('inis_jogadores_cache', JSON.stringify(arr))
+      })
+      .catch(() => {
+        const cached = localStorage.getItem('inis_jogadores_cache')
+        if (cached) {
+          try { setJogadores(JSON.parse(cached)) } catch { /* ignore */ }
+          setErro('Offline — exibindo dados salvos')
+        } else {
+          setErro('Sem conexão com o servidor')
+        }
+      })
       .finally(() => setCarregando(false))
   }, [])
 

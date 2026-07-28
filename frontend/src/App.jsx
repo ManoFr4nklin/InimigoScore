@@ -19,7 +19,13 @@ const GOLEIROS_KEY = 'inis_goleiros'
 
 export default function App() {
   const [logado, setLogado]       = useState(() => !!getToken())
-  const [page, setPage]           = useState('jogadores')
+  const [page, setPage]           = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('inis_partida_state'))
+      if (s?.fase && s.fase !== 'inicio') return 'partida'
+    } catch { /* ignore */ }
+    return 'jogadores'
+  })
   const [times, setTimesState]    = useState(() => {
     try { return JSON.parse(localStorage.getItem(TIMES_KEY)) } catch { return null }
   })
