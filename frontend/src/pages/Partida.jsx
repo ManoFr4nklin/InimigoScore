@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react'
 import './Partida.css'
 import { apiFetch } from '../api.js'
 
-const QUEUE_KEY = 'inis_sync_queue'
+const QUEUE_KEY        = 'inis_sync_queue'
+const PARTIDA_STATE_KEY = 'inis_partida_state'
+
+function readSaved() {
+  try { return JSON.parse(localStorage.getItem(PARTIDA_STATE_KEY)) ?? null }
+  catch { return null }
+}
 
 function getStat(stats, jId, campo) {
   return (stats[jId] || {})[campo] || 0
@@ -14,18 +20,18 @@ function setStat(prev, jId, campo, val) {
 }
 
 export default function Partida({ times, setTimes, goleiros = [], testMode = false }) {
-  const [partidaId, setPartidaId]           = useState(null)
-  const [sequencia, setSequencia]           = useState(1)
-  const [jogando, setJogando]               = useState(null)
-  const [fila, setFila]                     = useState([])
-  const [stats, setStats]                   = useState({})
-  const [goleirosAtivos, setGoleirosAtivos] = useState({ 0: null, 1: null })
-  const [vitorias, setVitorias]             = useState([0, 0, 0, 0])
-  const [totalVitorias, setTotalVitorias]   = useState([0, 0, 0, 0])
-  const [fase, setFase]                     = useState('inicio')
-  const [resultado, setResultado]           = useState(null)
+  const [partidaId, setPartidaId]           = useState(() => readSaved()?.partidaId     ?? null)
+  const [sequencia, setSequencia]           = useState(() => readSaved()?.sequencia     ?? 1)
+  const [jogando, setJogando]               = useState(() => readSaved()?.jogando       ?? null)
+  const [fila, setFila]                     = useState(() => readSaved()?.fila          ?? [])
+  const [stats, setStats]                   = useState(() => readSaved()?.stats         ?? {})
+  const [goleirosAtivos, setGoleirosAtivos] = useState(() => readSaved()?.goleirosAtivos ?? { 0: null, 1: null })
+  const [vitorias, setVitorias]             = useState(() => readSaved()?.vitorias      ?? [0, 0, 0, 0])
+  const [totalVitorias, setTotalVitorias]   = useState(() => readSaved()?.totalVitorias ?? [0, 0, 0, 0])
+  const [fase, setFase]                     = useState(() => readSaved()?.fase          ?? 'inicio')
+  const [resultado, setResultado]           = useState(() => readSaved()?.resultado     ?? null)
   const [iniciando, setIniciando]           = useState([])
-  const [proximoJogando, setProximoJogando] = useState([])
+  const [proximoJogando, setProximoJogando] = useState(() => readSaved()?.proximoJogando ?? [])
   const [syncPending, setSyncPending]       = useState(
     () => JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]').length > 0
   )
@@ -79,6 +85,19 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
     window.addEventListener('online', flushQueue)
     return () => window.removeEventListener('online', flushQueue)
   }, [])
+
+  // ─── Persistência do estado da partida (sobrevive ao fechar/voltar) ─────────
+  useEffect(() => {
+    if (fase === 'inicio') {
+      localStorage.removeItem(PARTIDA_STATE_KEY)
+      return
+    }
+    localStorage.setItem(PARTIDA_STATE_KEY, JSON.stringify({
+      partidaId, sequencia, jogando, fila, stats,
+      goleirosAtivos, vitorias, totalVitorias, fase,
+      resultado, proximoJogando
+    }))
+  }, [partidaId, sequencia, jogando, fila, stats, goleirosAtivos, vitorias, totalVitorias, fase, resultado, proximoJogando])
 
   if (!times) {
     return (
@@ -308,6 +327,7 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
   }
 
   function resetar() {
+    localStorage.removeItem(PARTIDA_STATE_KEY)
     setTimes(null)
     setPartidaId(null); setSequencia(1); setJogando(null); setFila([])
     setStats({}); setGoleirosAtivos({ 0: null, 1: null })
