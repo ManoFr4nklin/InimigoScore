@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import './Jogadores.css'
 import { apiFetch } from '../api.js'
+import { enqueue, flushQueue, getQueueLength } from '../sync.js'
+
+const JOGADORES_CACHE = 'inis_jogadores_cache'
+
+function updateCache(updater) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(JOGADORES_CACHE) || '[]')
+    localStorage.setItem(JOGADORES_CACHE, JSON.stringify(updater(cached)))
+  } catch { /* ignore */ }
+}
 
 const POSICOES = ['GOL', 'ATA', 'MEI', 'DEF']
 
@@ -57,6 +67,8 @@ export default function Jogadores() {
   const [importandoLote, setImportandoLote] = useState(false)
   const [resultadoLote, setResultadoLote]   = useState(null)
 
+  const [syncPendente, setSyncPendente] = useState(() => getQueueLength() > 0)
+
   const [view, setView]                   = useState('geral')
   const [rankDia, setRankDia]             = useState([])
   const [carregandoDia, setCarregandoDia] = useState(false)
@@ -72,10 +84,10 @@ export default function Jogadores() {
       .then(data => {
         const arr = Array.isArray(data) ? data : []
         setJogadores(arr)
-        localStorage.setItem('inis_jogadores_cache', JSON.stringify(arr))
+        localStorage.setItem(JOGADORES_CACHE, JSON.stringify(arr))
       })
       .catch(() => {
-        const cached = localStorage.getItem('inis_jogadores_cache')
+        const cached = localStorage.getItem(JOGADORES_CACHE)
         if (cached) {
           try { setJogadores(JSON.parse(cached)) } catch { /* ignore */ }
           setErro('Offline — exibindo dados salvos')
@@ -84,6 +96,19 @@ export default function Jogadores() {
         }
       })
       .finally(() => setCarregando(false))
+
+    async function handleOnline() {
+      const remaining = await flushQueue()
+      setSyncPendente(remaining > 0)
+      if (remaining === 0) {
+        apiFetch('/jogadores').then(r => r.json()).then(data => {
+          setJogadores(Array.isArray(data) ? data : [])
+          localStorage.setItem(JOGADORES_CACHE, JSON.stringify(Array.isArray(data) ? data : []))
+        }).catch(() => {})
+      }
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
   }, [])
 
   const carregarRankDia = useCallback(() => {
@@ -161,36 +186,50 @@ export default function Jogadores() {
         method: 'POST',
         body: JSON.stringify({ nome: nome.trim(), posicao })
       })
+      if (!res.ok) throw new Error()
       const novo = await res.json()
-      setJogadores(prev => [...prev, novo])
+      setJogadores(prev => {
+        const next = [...prev, novo]
+        updateCache(() => next)
+        return next
+      })
       setNome('')
     } catch {
-      setErro('Erro ao adicionar jogador.')
+      setErro('Sem conexão — adicione jogadores quando estiver online.')
     }
   }
 
   async function removeJogador(id) {
+    // Optimistic remove
+    setJogadores(prev => prev.filter(j => j.id !== id))
+    updateCache(cached => cached.filter(j => j.id !== id))
     try {
       await apiFetch(`/jogadores/${id}`, { method: 'DELETE' })
-      setJogadores(prev => prev.filter(j => j.id !== id))
     } catch {
-      setErro('Erro ao remover jogador.')
+      enqueue({ type: 'jogador_delete', id })
+      setSyncPendente(true)
     }
   }
 
   async function salvarEdicao() {
+    const { id, nome, posicao, firepower } = editando
+    // Optimistic update
+    setJogadores(prev => prev.map(j =>
+      j.id === id ? { ...j, nome, posicao, firepower } : j
+    ))
+    updateCache(cached => cached.map(j =>
+      j.id === id ? { ...j, nome, posicao, firepower } : j
+    ))
+    setEditando(null)
     try {
-      const res = await apiFetch(`/jogadores/${editando.id}`, {
+      const res = await apiFetch(`/jogadores/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ nome: editando.nome, posicao: editando.posicao, firepower: editando.firepower })
+        body: JSON.stringify({ nome, posicao, firepower })
       })
-      const atualizado = await res.json()
-      setJogadores(prev => prev.map(j =>
-        j.id === editando.id ? { ...j, nome: atualizado.nome, posicao: atualizado.posicao, firepower: atualizado.firepower } : j
-      ))
-      setEditando(null)
+      if (!res.ok) throw new Error()
     } catch {
-      setErro('Erro ao salvar edição.')
+      enqueue({ type: 'jogador_update', id, data: { nome, posicao, firepower } })
+      setSyncPendente(true)
     }
   }
 
@@ -200,6 +239,9 @@ export default function Jogadores() {
 
   return (
     <div className="jogadores-page">
+      {syncPendente && (
+        <div className="sync-banner">⏳ Alterações pendentes — serão sincronizadas ao voltar a internet</div>
+      )}
       {erro && (
         <div className="erro-banner">
           <span>{erro}</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { getToken, clearToken, apiFetch } from './api.js'
+import { flushQueue } from './sync.js'
 import Login from './pages/Login'
 import Jogadores from './pages/Jogadores'
 import Sorteio from './pages/Sorteio'
@@ -33,6 +34,12 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem(GOLEIROS_KEY)) || [] } catch { return [] }
   })
   const [testMode, setTestMode]   = useState(false)
+
+  // Global flush on reconnect — covers any page the user is on
+  useEffect(() => {
+    window.addEventListener('online', flushQueue)
+    return () => window.removeEventListener('online', flushQueue)
+  }, [])
 
   useEffect(() => {
     if (!logado) return

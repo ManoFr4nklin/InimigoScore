@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import './Partida.css'
 import { apiFetch } from '../api.js'
+import { enqueue, flushQueue, getQueueLength } from '../sync.js'
 
-const QUEUE_KEY        = 'inis_sync_queue'
 const PARTIDA_STATE_KEY = 'inis_partida_state'
 
 function readSaved() {
@@ -32,58 +32,16 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
   const [resultado, setResultado]           = useState(() => readSaved()?.resultado     ?? null)
   const [iniciando, setIniciando]           = useState([])
   const [proximoJogando, setProximoJogando] = useState(() => readSaved()?.proximoJogando ?? [])
-  const [syncPending, setSyncPending]       = useState(
-    () => JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]').length > 0
-  )
-
-  // ─── Fila offline ──────────────────────────────────────────────────────────
-  function enqueue(item) {
-    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
-    q.push(item)
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(q))
-    setSyncPending(true)
-  }
-
-  async function flushQueue() {
-    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
-    if (!q.length) return
-    let i = 0
-    for (; i < q.length; i++) {
-      const item = q[i]
-      try {
-        let pId = item.partida_id
-        if (!pId) {
-          const r = await apiFetch('/partidas', {
-            method: 'POST',
-            body: JSON.stringify({ data: item.data, is_test: item.is_test })
-          })
-          if (!r.ok) throw new Error('partida')
-          pId = (await r.json()).id
-        }
-        const rc = await apiFetch('/partidas/confrontos', {
-          method: 'POST',
-          body: JSON.stringify({ fk_partida: pId, ...item.confronto })
-        })
-        if (!rc.ok) throw new Error('confronto')
-        const { id: confrontoId } = await rc.json()
-        const jr = await apiFetch(`/partidas/confrontos/${confrontoId}/jogadores`, {
-          method: 'POST',
-          body: JSON.stringify(item.jogadores)
-        })
-        if (!jr.ok) throw new Error('jogadores')
-      } catch {
-        break
-      }
-    }
-    const remaining = q.slice(i)
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining))
-    setSyncPending(remaining.length > 0)
-  }
+  const [syncPending, setSyncPending] = useState(() => getQueueLength() > 0)
 
   useEffect(() => {
-    flushQueue()
-    window.addEventListener('online', flushQueue)
-    return () => window.removeEventListener('online', flushQueue)
+    async function handleOnline() {
+      const remaining = await flushQueue()
+      setSyncPending(remaining > 0)
+    }
+    handleOnline()
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
   }, [])
 
   // ─── Persistência do estado da partida (sobrevive ao fechar/voltar) ─────────
@@ -290,7 +248,6 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
       })
       if (!jr.ok) throw new Error('jogadores')
     } catch {
-      console.warn('Offline: confronto salvo na fila local')
       enqueue({
         data:       today,
         is_test:    testMode,
@@ -298,6 +255,7 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
         confronto:  confrontoData,
         jogadores:  jogadoresPayload,
       })
+      setSyncPending(true)
     }
   }
 

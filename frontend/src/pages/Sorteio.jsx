@@ -59,8 +59,18 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
   useEffect(() => {
     apiFetch('/jogadores')
       .then(res => res.json())
-      .then(setJogadores)
-      .catch(() => setJogadores([]))
+      .then(data => {
+        setJogadores(data)
+        localStorage.setItem('inis_jogadores_cache', JSON.stringify(data))
+      })
+      .catch(() => {
+        try {
+          const cached = localStorage.getItem('inis_jogadores_cache')
+          setJogadores(cached ? JSON.parse(cached) : [])
+        } catch {
+          setJogadores([])
+        }
+      })
   }, [])
 
   const goleirosPresentes = jogadores.filter(j => presentes.includes(j.id) && j.posicao === 'GOL').length
