@@ -3,10 +3,17 @@ import db from '../database/db.js'
 // Shrinkage bayesiano: puxa a nota em direção à base (6.0) quando n é pequeno.
 // Aumente C para ser mais conservador (mais partidas necessárias para "confiar" na nota).
 // TODO: considerar soft-cap perto dos extremos se firepower do grupo convergir para 90+
-const FIREPOWER_SHRINKAGE_C = 3
+const FIREPOWER_SHRINKAGE_C = 1
 
 function notaAjustada(notaBruta, nPartidas) {
   return (FIREPOWER_SHRINKAGE_C * 6.0 + nPartidas * notaBruta) / (FIREPOWER_SHRINKAGE_C + nPartidas)
+}
+
+function calcDelta(notaAdj) {
+  const diff = notaAdj - 6
+  return diff >= 0
+    ? Math.round(diff * 2)   // bônus: ×2
+    : Math.round(diff * 3)   // penalidade: ×3
 }
 
 async function statsDodia(data) {
@@ -68,7 +75,7 @@ export async function encerrarDia(req, res) {
     const updates = await Promise.all(
       players.map(async p => {
         const notaAdj  = notaAjustada(p.nota, p.partidas)
-        const delta    = Math.round((notaAdj - 6) * 2)
+        const delta    = calcDelta(notaAdj)
         const novoFirepower = Math.max(0, Math.min(100, p.firepower + delta))
         await db.query('UPDATE jogadores SET firepower = $1 WHERE id = $2', [novoFirepower, p.id])
         return {
@@ -101,9 +108,9 @@ export async function previewFirepower(req, res) {
     const comparativo = players
       .sort((a, b) => b.nota - a.nota)
       .map(p => {
-        const deltaAntigo = Math.round((p.nota - 6) * 2)
+        const deltaAntigo = calcDelta(p.nota)
         const notaAdj     = notaAjustada(p.nota, p.partidas)
-        const deltaNovo   = Math.round((notaAdj - 6) * 2)
+        const deltaNovo   = calcDelta(notaAdj)
         return {
           nome:          p.nome,
           posicao:       p.posicao,
