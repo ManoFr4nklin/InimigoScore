@@ -376,6 +376,7 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
                 >
                   <span className={`pos-badge pos-${j.posicao.toLowerCase()}`}>{j.posicao}</span>
                   <span className="time-player-nome">{j.nome}</span>
+                  <span className="time-player-fp">⚡{j.firepower ?? 60}</span>
                 </div>
               ))}
               {time.jogadores.length === 0 && selecionado && selecionado.timeIdx !== timeIdx && (
@@ -402,6 +403,7 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
                 >
                   <span className={`pos-badge pos-${j.posicao.toLowerCase()}`}>{j.posicao}</span>
                   <span className="time-player-nome">{j.nome}</span>
+                  <span className="time-player-fp">⚡{j.firepower ?? 60}</span>
                 </div>
               ))}
               {bench.length === 0 && <span className="bench-empty">—</span>}
