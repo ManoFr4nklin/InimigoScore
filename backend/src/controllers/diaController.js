@@ -32,8 +32,8 @@ async function statsDodia(data) {
              6.0
              + jc.gols         * 2.0
              + jc.assistencias * 1.0
-             + CASE WHEN j.posicao IN ('DEF', 'MEI') THEN jc.desarmes * 0.5 ELSE 0 END
-             + CASE WHEN j.posicao IN ('ATA', 'MEI') THEN jc.dribles  * 0.3 ELSE 0 END
+             + CASE j.posicao WHEN 'DEF' THEN jc.desarmes * 0.5 WHEN 'MEI' THEN jc.desarmes * 0.4 WHEN 'ATA' THEN jc.desarmes * 0.3 ELSE 0 END
+             + CASE j.posicao WHEN 'DEF' THEN jc.dribles  * 0.3 WHEN 'MEI' THEN jc.dribles  * 0.5 WHEN 'ATA' THEN jc.dribles  * 0.5 ELSE 0 END
              - jc.falhas       * 0.3
              - jc.faltas       * 0.5
              - jc.amarelos     * 1.0

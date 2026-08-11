@@ -20,8 +20,8 @@ function calcNota(j) {
   const delta = (
     gols * 2 +
     assistencias * 1 +
-    (['DEF', 'MEI'].includes(j.posicao) ? (desarmes || 0) * 0.5 : 0) +
-    (['ATA', 'MEI'].includes(j.posicao) ? (dribles  || 0) * 0.3 : 0) -
+    (desarmes || 0) * (j.posicao === 'DEF' ? 0.5 : j.posicao === 'MEI' ? 0.4 : j.posicao === 'ATA' ? 0.3 : 0) +
+    (dribles  || 0) * (j.posicao === 'DEF' ? 0.3 : j.posicao === 'MEI' ? 0.5 : j.posicao === 'ATA' ? 0.5 : 0) -
     (falhas  || 0) * 0.3 -
     (faltas  || 0) * 0.5 -
     (amarelos || 0) * 1 -

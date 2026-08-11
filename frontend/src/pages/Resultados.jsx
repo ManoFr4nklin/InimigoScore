@@ -70,10 +70,11 @@ function buildFromQueue(data) {
       const id = parseInt(idStr)
       const p  = playerMap[id]
       const { gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos, partidas } = s
+      const pos = p?.posicao
       const notaBruta = 6 + (
         gols * 2 + assistencias +
-        (['DEF', 'MEI'].includes(p?.posicao) ? desarmes * 0.5 : 0) +
-        (['ATA', 'MEI'].includes(p?.posicao) ? (s.dribles || 0) * 0.3 : 0) -
+        desarmes * (pos === 'DEF' ? 0.5 : pos === 'MEI' ? 0.4 : pos === 'ATA' ? 0.3 : 0) +
+        (s.dribles || 0) * (pos === 'DEF' ? 0.3 : pos === 'MEI' ? 0.5 : pos === 'ATA' ? 0.5 : 0) -
         falhas * 0.3 - faltas * 0.5 - amarelos - vermelhos * 2
       ) / partidas
       return {
