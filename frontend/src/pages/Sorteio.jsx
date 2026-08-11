@@ -504,6 +504,7 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
                   <div className={`chk${sel ? ' chk-on' : ''}`}>{sel && '✓'}</div>
                   <span className="select-nome">{j.nome}</span>
                   <span className={`pos-badge pos-${j.posicao.toLowerCase()}`}>{j.posicao}</span>
+                  <span className="select-fp">⚡{j.firepower ?? 60}</span>
                 </div>
               )
             })}

@@ -270,6 +270,14 @@
   color: var(--text-bright);
 }
 
+.select-fp {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
 /* Buttons */
 .btn-sortear {
   font-family: var(--font-heading);
