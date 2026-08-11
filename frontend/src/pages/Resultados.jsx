@@ -51,13 +51,14 @@ function buildFromQueue(data) {
     items.forEach(item => {
       item.jogadores.forEach(j => {
         if (!statsMap[j.fk_jogador]) {
-          statsMap[j.fk_jogador] = { gols: 0, assistencias: 0, falhas: 0, desarmes: 0, faltas: 0, amarelos: 0, vermelhos: 0, partidas: 0 }
+          statsMap[j.fk_jogador] = { gols: 0, assistencias: 0, falhas: 0, desarmes: 0, dribles: 0, faltas: 0, amarelos: 0, vermelhos: 0, partidas: 0 }
         }
         const s = statsMap[j.fk_jogador]
         s.gols         += j.gols         || 0
         s.assistencias += j.assistencias || 0
         s.falhas       += j.falhas       || 0
         s.desarmes     += j.desarmes     || 0
+        s.dribles      += j.dribles      || 0
         s.faltas       += j.faltas       || 0
         s.amarelos     += j.amarelos     || 0
         s.vermelhos    += j.vermelhos    || 0
@@ -71,7 +72,8 @@ function buildFromQueue(data) {
       const { gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos, partidas } = s
       const notaBruta = 6 + (
         gols * 2 + assistencias +
-        (['DEF', 'MEI'].includes(p?.posicao) ? desarmes * 0.5 : 0) -
+        (['DEF', 'MEI'].includes(p?.posicao) ? desarmes * 0.5 : 0) +
+        (['ATA', 'MEI'].includes(p?.posicao) ? (s.dribles || 0) * 0.3 : 0) -
         falhas * 0.3 - faltas * 0.5 - amarelos - vermelhos * 2
       ) / partidas
       return {

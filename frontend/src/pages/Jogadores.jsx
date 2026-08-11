@@ -15,12 +15,13 @@ function updateCache(updater) {
 const POSICOES = ['GOL', 'ATA', 'MEI', 'DEF']
 
 function calcNota(j) {
-  const { partidas, gols, assistencias, falhas, desarmes, faltas, amarelos, vermelhos } = j.stats
+  const { partidas, gols, assistencias, falhas, desarmes, dribles, faltas, amarelos, vermelhos } = j.stats
   if (partidas === 0) return 6
   const delta = (
     gols * 2 +
     assistencias * 1 +
-    (['DEF', 'MEI'].includes(j.posicao) ? (desarmes || 0) * 0.5 : 0) -
+    (['DEF', 'MEI'].includes(j.posicao) ? (desarmes || 0) * 0.5 : 0) +
+    (['ATA', 'MEI'].includes(j.posicao) ? (dribles  || 0) * 0.3 : 0) -
     (falhas  || 0) * 0.3 -
     (faltas  || 0) * 0.5 -
     (amarelos || 0) * 1 -
