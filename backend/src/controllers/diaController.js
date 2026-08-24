@@ -43,7 +43,7 @@ async function statsDodia(data) {
     JOIN confrontos c           ON c.fk_partida  = p.id
     JOIN jogadores_confronto jc ON jc.fk_confronto = c.id
     JOIN jogadores j            ON j.id           = jc.fk_jogador
-    WHERE p.data = $1
+    WHERE p.data = $1 AND p.is_test IS NOT TRUE
     GROUP BY j.id, j.nome, j.posicao, j.firepower
   `, [data])
 
@@ -144,7 +144,7 @@ export async function confrontosDia(req, res) {
       JOIN confrontos c           ON c.fk_partida   = p.id
       JOIN jogadores_confronto jc ON jc.fk_confronto = c.id
       JOIN jogadores j            ON j.id            = jc.fk_jogador
-      WHERE p.data = $1
+      WHERE p.data = $1 AND p.is_test IS NOT TRUE
       ORDER BY c.sequencia, jc.time
     `, [req.params.data])
 
@@ -202,7 +202,7 @@ export async function rankingTimes(req, res) {
                SUM(placar_a - placar_b) AS saldo
         FROM confrontos c
         JOIN partidas p ON p.id = c.fk_partida
-        WHERE p.data = $1 AND nome_time_a IS NOT NULL
+        WHERE p.data = $1 AND p.is_test IS NOT TRUE AND nome_time_a IS NOT NULL
         GROUP BY nome_time_a
         UNION ALL
         SELECT nome_time_b,
@@ -213,7 +213,7 @@ export async function rankingTimes(req, res) {
                SUM(placar_b - placar_a)
         FROM confrontos c
         JOIN partidas p ON p.id = c.fk_partida
-        WHERE p.data = $1 AND nome_time_b IS NOT NULL
+        WHERE p.data = $1 AND p.is_test IS NOT TRUE AND nome_time_b IS NOT NULL
         GROUP BY nome_time_b
       ) t
       GROUP BY nome_time

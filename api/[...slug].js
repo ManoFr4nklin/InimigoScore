@@ -227,10 +227,17 @@ app.post('/partidas/confrontos/:id/jogadores', async (req, res) => {
 })
 
 // ── Dia ───────────────────────────────────────────────────
-const SHRINKAGE_C = 3
+const SHRINKAGE_C = 1
 
 function notaAjustada(notaBruta, nPartidas) {
   return (SHRINKAGE_C * 6.0 + nPartidas * notaBruta) / (SHRINKAGE_C + nPartidas)
+}
+
+function calcDelta(notaAdj) {
+  const diff = notaAdj - 6
+  return diff >= 0
+    ? Math.round(diff * 2)   // bônus: ×2
+    : Math.round(diff * 3)   // penalidade: ×3
 }
 
 async function statsDodia(data) {
@@ -249,8 +256,8 @@ async function statsDodia(data) {
              6.0
              + jc.gols         * 2.0
              + jc.assistencias * 1.0
-             + CASE WHEN j.posicao IN ('DEF', 'MEI') THEN jc.desarmes * 0.5 ELSE 0 END
-             + CASE WHEN j.posicao IN ('ATA', 'MEI') THEN jc.dribles  * 0.3 ELSE 0 END
+             + CASE j.posicao WHEN 'DEF' THEN jc.desarmes * 0.5 WHEN 'MEI' THEN jc.desarmes * 0.4 WHEN 'ATA' THEN jc.desarmes * 0.3 ELSE 0 END
+             + CASE j.posicao WHEN 'DEF' THEN jc.dribles  * 0.3 WHEN 'MEI' THEN jc.dribles  * 0.5 WHEN 'ATA' THEN jc.dribles  * 0.5 ELSE 0 END
              - jc.falhas       * 0.3
              - jc.faltas       * 0.5
              - jc.amarelos     * 1.0
@@ -357,7 +364,7 @@ app.post('/dia/:data/encerrar', async (req, res) => {
     if (players.length === 0)
       return res.status(400).json({ error: 'Nenhuma partida encontrada nessa data.' })
     const updates = await Promise.all(players.map(async p => {
-      const delta    = Math.round((notaAjustada(p.nota, p.partidas) - 6) * 2)
+      const delta    = calcDelta(notaAjustada(p.nota, p.partidas))
       const novoFp   = Math.max(0, Math.min(100, p.firepower + delta))
       await pool.query('UPDATE jogadores SET firepower = $1 WHERE id = $2', [novoFp, p.id])
       return { id: p.id, nome: p.nome, nota: p.nota, delta, firepowerAntes: p.firepower, firepowerDepois: novoFp }
