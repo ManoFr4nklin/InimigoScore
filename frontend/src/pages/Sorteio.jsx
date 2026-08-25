@@ -55,6 +55,7 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
   const [mostrarImport, setMostrarImport] = useState(false)
   const [importInfo, setImportInfo]   = useState(null)
   const [importando, setImportando]   = useState(false)
+  const [subModal, setSubModal]       = useState(null) // { jogador, timeIdx }
 
   useEffect(() => {
     apiFetch('/jogadores')
@@ -311,10 +312,53 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
     setPage('partida')
   }
 
+  // Jogadores disponíveis para substituição (não estão em nenhum time nem no banco nem como goleiro)
+  const emCampo = new Set([
+    ...(timesLocal ? timesLocal.flatMap(t => t.jogadores.map(j => j.id)) : []),
+    ...(bench ? bench.map(j => j.id) : []),
+    ...goleirosList.map(g => g.id),
+  ])
+  const disponiveis = jogadores
+    .filter(j => !emCampo.has(j.id))
+    .sort((a, b) => (b.firepower ?? 60) - (a.firepower ?? 60))
+
+  function fazerSub(substituto) {
+    const { jogador: saindo, timeIdx } = subModal
+    setTimesLocal(prev => prev.map((t, i) => {
+      if (i !== timeIdx) return t
+      return { ...t, jogadores: t.jogadores.map(j => j.id === saindo.id ? substituto : j) }
+    }))
+    setSubModal(null)
+  }
+
   // ─── Step: times ──────────────────────────────────────────────────────────
   if (step === 'times' && timesLocal) {
     return (
       <div className="sorteio-page">
+        {subModal && (
+          <div className="sub-overlay" onClick={() => setSubModal(null)}>
+            <div className="sub-modal" onClick={e => e.stopPropagation()}>
+              <div className="sub-modal-header">
+                Substituir <strong>{subModal.jogador.nome}</strong>
+                <button className="sub-modal-close" onClick={() => setSubModal(null)}>✕</button>
+              </div>
+              {disponiveis.length === 0 ? (
+                <div className="sub-modal-empty">Nenhum jogador disponível para substituição</div>
+              ) : (
+                <div className="sub-modal-list">
+                  {disponiveis.map(j => (
+                    <div key={j.id} className="sub-player-option" onClick={() => fazerSub(j)}>
+                      <span className={`pos-badge pos-${j.posicao.toLowerCase()}`}>{j.posicao}</span>
+                      <span className="sub-player-nome">{j.nome}</span>
+                      <span className="sub-player-fp">⚡{j.firepower ?? 60}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="step-header">
           <button className="btn-back" onClick={() => { setStep('selecao'); setSelecionado(null); setBench(null) }}>← VOLTAR</button>
           <h2 className="step-title">Times</h2>
@@ -377,6 +421,11 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
                   <span className={`pos-badge pos-${j.posicao.toLowerCase()}`}>{j.posicao}</span>
                   <span className="time-player-nome">{j.nome}</span>
                   <span className="time-player-fp">⚡{j.firepower ?? 60}</span>
+                  <button
+                    className="btn-sub"
+                    title="Substituir jogador"
+                    onClick={e => { e.stopPropagation(); setSelecionado(null); setSubModal({ jogador: j, timeIdx }) }}
+                  >⇄</button>
                 </div>
               ))}
               {time.jogadores.length === 0 && selecionado && selecionado.timeIdx !== timeIdx && (
