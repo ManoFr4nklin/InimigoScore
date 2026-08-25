@@ -112,7 +112,7 @@ export default function App() {
         {page === 'jogadores'  && <Jogadores />}
         {page === 'sorteio'   && <Sorteio setTimes={setTimes} setGoleiros={setGoleiros} setPage={setPage} />}
         <div style={{ display: page === 'partida' ? 'block' : 'none' }}>
-          <Partida times={times} setTimes={setTimes} goleiros={goleiros} testMode={testMode} />
+          <Partida times={times} setTimes={setTimes} goleiros={goleiros} testMode={testMode} setPage={setPage} />
         </div>
         {page === 'resultados' && <Resultados />}
       </main>

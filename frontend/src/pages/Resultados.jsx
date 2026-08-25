@@ -122,7 +122,7 @@ export default function Resultados() {
   const data = dataHoje()
   const CACHE_KEY = `inis_resultados_${data}`
 
-  useEffect(() => {
+  function carregar() {
     setCarregando(true)
     setOfflineMode(null)
     Promise.all([
@@ -135,7 +135,10 @@ export default function Resultados() {
         const confrontos = Array.isArray(confs) ? confs : []
         const rankTimes  = Array.isArray(times) ? times : []
         setRanking(ranking); setConfrontos(confrontos); setRankTimes(rankTimes)
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ ranking, confrontos, rankTimes }))
+        // Só cacheia quando há dados reais — evita sobrescrever cache com lista vazia
+        if (ranking.length > 0) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ranking, confrontos, rankTimes }))
+        }
       })
       .catch(() => {
         // 1. Try cached server response
@@ -157,7 +160,9 @@ export default function Resultados() {
         }
       })
       .finally(() => setCarregando(false))
-  }, [data])
+  }
+
+  useEffect(() => { carregar() }, [data])
 
   const top5 = ranking.slice(0, 5)
   const bot5 = ranking.length > 5 ? [...ranking].reverse().slice(0, 5) : []
@@ -174,7 +179,12 @@ export default function Resultados() {
       )}
       {erro && <div className="erro-banner"><span>{erro}</span><button onClick={() => setErro(null)}>✕</button></div>}
 
-      <div className="res-section-title">{data}</div>
+      <div className="res-top-row">
+        <div className="res-section-title">{data}</div>
+        <button className="btn-atualizar" onClick={carregar} disabled={carregando}>
+          {carregando ? '⏳' : '↺ Atualizar'}
+        </button>
+      </div>
 
       {ranking.length === 0 ? (
         <div className="empty-state">Nenhuma partida registrada hoje.</div>

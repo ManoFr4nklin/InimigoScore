@@ -19,7 +19,7 @@ function setStat(prev, jId, campo, val) {
   return { ...prev, [jId]: { ...curr, [campo]: Math.max(0, val) } }
 }
 
-export default function Partida({ times, setTimes, goleiros = [], testMode = false }) {
+export default function Partida({ times, setTimes, goleiros = [], testMode = false, setPage }) {
   const [partidaId, setPartidaId]           = useState(() => readSaved()?.partidaId     ?? null)
   const [sequencia, setSequencia]           = useState(() => readSaved()?.sequencia     ?? 1)
   const [jogando, setJogando]               = useState(() => readSaved()?.jogando       ?? null)
@@ -284,13 +284,17 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
     })
   }
 
-  function resetar() {
+  async function resetar() {
     localStorage.removeItem(PARTIDA_STATE_KEY)
     setTimes(null)
     setPartidaId(null); setSequencia(1); setJogando(null); setFila([])
     setStats({}); setGoleirosAtivos({ 0: null, 1: null })
     setVitorias([0, 0, 0, 0]); setTotalVitorias([0, 0, 0, 0])
     setFase('inicio'); setIniciando([])
+    // Sincroniza fila antes de navegar para Resultados
+    await flushQueue()
+    setSyncPending(getQueueLength() > 0)
+    setPage?.('resultados')
   }
 
   // ─── TELA: Selecionar goleiros ─────────────────────────────────────────────
