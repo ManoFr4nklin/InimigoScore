@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .env
 node_modules/
+
+# Scripts avulsos de consulta/correção de banco (contêm connection string hardcoded)
+backend/*.mjs
