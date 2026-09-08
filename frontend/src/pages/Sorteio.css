@@ -333,18 +333,39 @@
   cursor: pointer;
 }
 
+.time-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
 .time-title {
   font-family: var(--font-heading);
   font-size: 20px;
   letter-spacing: 2px;
-  margin-bottom: 6px;
   cursor: pointer;
   opacity: 0.9;
   transition: opacity 0.15s;
   user-select: none;
+  flex: 1;
 }
 
 .time-title:hover { opacity: 1; }
+
+.cor-picker {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cor-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.cor-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
 
 .time-overall {
   font-size: 13px;

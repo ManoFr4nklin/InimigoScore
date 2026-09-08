@@ -446,26 +446,22 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
                       <button className="ctr-btn" onClick={() => addFalha(j.id)}>+</button>
                     </div>
                   </div>
-                  {(j.posicao === 'DEF' || j.posicao === 'MEI') && (
-                    <div className="counter-group">
-                      <span className="ctr-label">desarm</span>
-                      <div className="ctr-row">
-                        <button className="ctr-btn" onClick={() => removeDesarme(j.id)} disabled={d <= 0}>−</button>
-                        <span className="ctr-val">{d}</span>
-                        <button className="ctr-btn" onClick={() => addDesarme(j.id)}>+</button>
-                      </div>
+                  <div className="counter-group">
+                    <span className="ctr-label">desarm</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeDesarme(j.id)} disabled={d <= 0}>−</button>
+                      <span className="ctr-val">{d}</span>
+                      <button className="ctr-btn" onClick={() => addDesarme(j.id)}>+</button>
                     </div>
-                  )}
-                  {(j.posicao === 'ATA' || j.posicao === 'MEI') && (
-                    <div className="counter-group">
-                      <span className="ctr-label">drible</span>
-                      <div className="ctr-row">
-                        <button className="ctr-btn" onClick={() => removeDrible(j.id)} disabled={dr <= 0}>−</button>
-                        <span className="ctr-val">{dr}</span>
-                        <button className="ctr-btn" onClick={() => addDrible(j.id)}>+</button>
-                      </div>
+                  </div>
+                  <div className="counter-group">
+                    <span className="ctr-label">drible</span>
+                    <div className="ctr-row">
+                      <button className="ctr-btn" onClick={() => removeDrible(j.id)} disabled={dr <= 0}>−</button>
+                      <span className="ctr-val">{dr}</span>
+                      <button className="ctr-btn" onClick={() => addDrible(j.id)}>+</button>
                     </div>
-                  )}
+                  </div>
                   <div className="counter-group">
                     <span className="ctr-label">faltas</span>
                     <div className="ctr-row">

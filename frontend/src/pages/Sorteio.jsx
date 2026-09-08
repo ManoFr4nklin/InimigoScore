@@ -331,6 +331,10 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
     setSubModal(null)
   }
 
+  function mudarCor(timeIdx, novaCor) {
+    setTimesLocal(prev => prev.map((t, i) => i === timeIdx ? { ...t, cor: novaCor } : t))
+  }
+
   // ─── Step: times ──────────────────────────────────────────────────────────
   if (step === 'times' && timesLocal) {
     return (
@@ -401,16 +405,26 @@ export default function Sorteio({ setTimes, setGoleiros, setPage }) {
                   }}
                 />
               ) : (
-                <h3
-                  className="time-title"
-                  style={{ color: time.cor }}
-                  title="Clique para renomear"
-                  onClick={e => { e.stopPropagation(); setEditingTimeIdx(timeIdx); setEditingNome(time.nome) }}
-                >
-                  {time.nome}
-                  <span className="time-overall">{calcOverall(time.jogadores)}</span>
-                  {' ✎'}
-                </h3>
+                <div className="time-title-row">
+                  <h3
+                    className="time-title"
+                    style={{ color: time.cor }}
+                    title="Clique para renomear"
+                    onClick={e => { e.stopPropagation(); setEditingTimeIdx(timeIdx); setEditingNome(time.nome) }}
+                  >
+                    {time.nome}
+                    <span className="time-overall">{calcOverall(time.jogadores)}</span>
+                    {' ✎'}
+                  </h3>
+                  <input
+                    type="color"
+                    className="cor-picker"
+                    value={time.cor}
+                    title="Mudar cor do time"
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => mudarCor(timeIdx, e.target.value)}
+                  />
+                </div>
               )}
               {time.jogadores.map(j => (
                 <div
