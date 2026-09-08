@@ -112,7 +112,7 @@ function buildFromQueue(data) {
   }
 }
 
-export default function Resultados() {
+export default function Resultados({ testMode = false }) {
   const [ranking,     setRanking]     = useState([])
   const [confrontos,  setConfrontos]  = useState([])
   const [rankTimes,   setRankTimes]   = useState([])
@@ -187,7 +187,11 @@ export default function Resultados() {
       </div>
 
       {ranking.length === 0 ? (
-        <div className="empty-state">Nenhuma partida registrada hoje.</div>
+        <div className="empty-state">
+          {testMode
+            ? '🧪 Modo Teste ativo — partidas de teste não aparecem aqui. Desative o TESTE e encerre uma pelada real para ver os resultados.'
+            : 'Nenhuma partida registrada hoje.'}
+        </div>
       ) : (
         <>
           {/* Ranking de times */}

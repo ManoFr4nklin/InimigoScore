@@ -114,7 +114,7 @@ export default function App() {
         <div style={{ display: page === 'partida' ? 'block' : 'none' }}>
           <Partida times={times} setTimes={setTimes} goleiros={goleiros} testMode={testMode} setPage={setPage} />
         </div>
-        {page === 'resultados' && <Resultados />}
+        {page === 'resultados' && <Resultados testMode={testMode} />}
       </main>
     </div>
   )

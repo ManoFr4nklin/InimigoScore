@@ -2,7 +2,7 @@ import { apiFetch } from './api.js'
 
 export const QUEUE_KEY = 'inis_sync_queue'
 
-let flushing = false
+let flushPromise = null
 
 export function enqueue(item) {
   const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
@@ -18,10 +18,7 @@ export function getQueueLength() {
   }
 }
 
-// Returns number of items remaining in queue after flush attempt
-export async function flushQueue() {
-  if (flushing) return getQueueLength()
-  flushing = true
+async function _doFlush() {
   try {
     const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
     if (!q.length) return 0
@@ -70,7 +67,19 @@ export async function flushQueue() {
     const remaining = q.slice(i)
     localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining))
     return remaining.length
+  } catch {
+    return getQueueLength()
+  }
+}
+
+// Se já houver um flush em andamento, espera ele terminar em vez de retornar imediatamente.
+// Isso garante que resetar() só navega para Resultados após todos os dados serem enviados.
+export async function flushQueue() {
+  if (flushPromise) return await flushPromise
+  flushPromise = _doFlush()
+  try {
+    return await flushPromise
   } finally {
-    flushing = false
+    flushPromise = null
   }
 }
