@@ -33,6 +33,8 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
   const [iniciando, setIniciando]           = useState([])
   const [proximoJogando, setProximoJogando] = useState(() => readSaved()?.proximoJogando ?? [])
   const [syncPending, setSyncPending] = useState(() => getQueueLength() > 0)
+  const [resumoFinal, setResumoFinal] = useState(null)
+  const [encerrando, setEncerrando] = useState(false)
 
   useEffect(() => {
     async function handleOnline() {
@@ -56,6 +58,62 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
       resultado, proximoJogando
     }))
   }, [partidaId, sequencia, jogando, fila, stats, goleirosAtivos, vitorias, totalVitorias, fase, resultado, proximoJogando])
+
+  // ─── TELA: Resumo do encerramento (top5 / piores5 com gols e assistências) ──
+  if (resumoFinal) {
+    const ranking = [...resumoFinal.jogadores].sort((a, b) => b.nota - a.nota)
+    const top5 = ranking.slice(0, 5)
+    const bot5 = ranking.length > 5 ? ranking.slice(-5).reverse() : []
+
+    const linha = (p, idx, posAbs) => (
+      <div key={p.id} className="resumo-item">
+        <span className="resumo-pos">#{posAbs}</span>
+        <div className="resumo-info">
+          <span className="resumo-nome">{p.nome}</span>
+          <span className={`pos-badge pos-${(p.posicao || '').toLowerCase()}`}>{p.posicao}</span>
+        </div>
+        <div className="resumo-stats">
+          <span className="resumo-nota">{p.nota.toFixed(1)}</span>
+          <span className="resumo-ga">⚽{p.gols} 🤝{p.assistencias}</span>
+        </div>
+        <span className={`resumo-delta${p.delta >= 0 ? ' pos' : ' neg'}`}>
+          {p.delta >= 0 ? '+' : ''}{p.delta}
+        </span>
+      </div>
+    )
+
+    return (
+      <div className="partida-page">
+        <div className="resultado-card">
+          <h2 className="step-title">🏁 Pelada Encerrada!</h2>
+          <p className="res-msg">Firepower atualizado para {ranking.length} jogadores</p>
+
+          <div className="resumo-secao">
+            <div className="resumo-titulo top">🏆 TOP 5 DO DIA</div>
+            <div className="resumo-lista">
+              {top5.map((p, i) => linha(p, i, i + 1))}
+            </div>
+          </div>
+
+          {bot5.length > 0 && (
+            <div className="resumo-secao">
+              <div className="resumo-titulo bot">💀 PIORES 5</div>
+              <div className="resumo-lista">
+                {bot5.map((p, i) => linha(p, i, ranking.length - i))}
+              </div>
+            </div>
+          )}
+
+          <button
+            className="btn-proximo"
+            onClick={() => { setResumoFinal(null); setPage?.('resultados') }}
+          >
+            VER RESULTADOS COMPLETOS →
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!times) {
     return (
@@ -284,17 +342,44 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
     })
   }
 
-  async function resetar() {
+  function limparEstadoPartida() {
     localStorage.removeItem(PARTIDA_STATE_KEY)
     setTimes(null)
     setPartidaId(null); setSequencia(1); setJogando(null); setFila([])
     setStats({}); setGoleirosAtivos({ 0: null, 1: null })
     setVitorias([0, 0, 0, 0]); setTotalVitorias([0, 0, 0, 0])
     setFase('inicio'); setIniciando([])
-    // Sincroniza fila antes de navegar para Resultados
+  }
+
+  // "Refazer Sorteio" — só reseta o estado local, não mexe no firepower
+  async function refazerSorteio() {
+    limparEstadoPartida()
     await flushQueue()
     setSyncPending(getQueueLength() > 0)
-    setPage?.('resultados')
+  }
+
+  // "Encerrar Pelada" — sincroniza, fecha o dia (aplica firepower) e mostra o resumo
+  async function encerrarPelada() {
+    setEncerrando(true)
+    // Sincroniza fila antes de encerrar o dia (confrontos pendentes precisam entrar na conta)
+    await flushQueue()
+    setSyncPending(getQueueLength() > 0)
+
+    const today = new Date().toISOString().split('T')[0]
+    let resumo = null
+    try {
+      const res = await apiFetch(`/dia/${today}/encerrar`, { method: 'POST' })
+      if (res.ok) resumo = await res.json()
+    } catch { /* offline ou sem partidas do dia — segue sem resumo */ }
+
+    limparEstadoPartida()
+    setEncerrando(false)
+
+    if (resumo?.jogadores?.length) {
+      setResumoFinal(resumo)
+    } else {
+      setPage?.('resultados')
+    }
   }
 
   // ─── TELA: Selecionar goleiros ─────────────────────────────────────────────
@@ -388,7 +473,9 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
           <button className="btn-proximo" onClick={proximo} disabled={proximoJogando.length !== 2}>
             INICIAR PRÓXIMO →
           </button>
-          <button className="btn-reset" onClick={resetar}>Encerrar Pelada</button>
+          <button className="btn-reset" onClick={encerrarPelada} disabled={encerrando}>
+            {encerrando ? 'ENCERRANDO...' : 'Encerrar Pelada'}
+          </button>
         </div>
       </div>
     )
@@ -583,7 +670,7 @@ export default function Partida({ times, setTimes, goleiros = [], testMode = fal
         INICIAR CONFRONTO
       </button>
 
-      <button className="btn-reset" onClick={resetar}>
+      <button className="btn-reset" onClick={refazerSorteio}>
         Refazer Sorteio
       </button>
 

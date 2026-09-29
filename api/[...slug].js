@@ -367,7 +367,11 @@ app.post('/dia/:data/encerrar', async (req, res) => {
       const delta    = calcDelta(notaAjustada(p.nota, p.partidas))
       const novoFp   = Math.max(0, Math.min(100, p.firepower + delta))
       await pool.query('UPDATE jogadores SET firepower = $1 WHERE id = $2', [novoFp, p.id])
-      return { id: p.id, nome: p.nome, nota: p.nota, delta, firepowerAntes: p.firepower, firepowerDepois: novoFp }
+      return {
+        id: p.id, nome: p.nome, posicao: p.posicao, nota: p.nota, delta,
+        firepowerAntes: p.firepower, firepowerDepois: novoFp,
+        gols: p.gols, assistencias: p.assistencias,
+      }
     }))
     res.json({ data, jogadores: updates })
   } catch (err) { res.status(500).json({ error: err.message }) }

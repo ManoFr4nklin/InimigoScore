@@ -81,10 +81,13 @@ export async function encerrarDia(req, res) {
         return {
           id:              p.id,
           nome:            p.nome,
+          posicao:         p.posicao,
           nota:            p.nota,       // nota bruta exibida na UI, sem shrinkage
           delta,
           firepowerAntes:  p.firepower,
-          firepowerDepois: novoFirepower
+          firepowerDepois: novoFirepower,
+          gols:            p.gols,
+          assistencias:    p.assistencias
         }
       })
     )

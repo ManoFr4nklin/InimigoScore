@@ -343,13 +343,13 @@
 }
 
 .ctr-btn {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: 19px;
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -367,10 +367,10 @@
 .ctr-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
 .ctr-val {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
-  min-width: 24px;
+  min-width: 26px;
   text-align: center;
 }
 
@@ -498,6 +498,95 @@
 
 .btn-proximo:hover:not(:disabled) { opacity: 0.85; }
 .btn-proximo:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Resumo do encerramento (top5 / piores5) */
+.resumo-secao {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resumo-titulo {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-align: left;
+}
+
+.resumo-titulo.top { color: #ffd600; }
+.resumo-titulo.bot { color: #ff4444; }
+
+.resumo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.resumo-pos {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 22px;
+}
+
+.resumo-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: left;
+}
+
+.resumo-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resumo-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.resumo-nota {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  color: var(--text-bright);
+}
+
+.resumo-ga {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.resumo-delta {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  min-width: 30px;
+  text-align: right;
+}
+
+.resumo-delta.pos { color: #4caf50; }
+.resumo-delta.neg { color: #ff4444; }
 
 /* Seleção manual do próximo confronto */
 .proximo-selecao {
@@ -651,8 +740,8 @@
   .pl-num        { font-size: 38px; }
   .pl-num.pl-win { font-size: 46px; }
   .pl-nome       { font-size: 13px; }
-  .ctr-btn       { width: 22px; height: 22px; font-size: 12px; }
-  .ctr-val       { min-width: 18px; font-size: 11px; }
+  .ctr-btn       { width: 30px; height: 30px; font-size: 17px; }
+  .ctr-val       { min-width: 22px; font-size: 13px; }
   .psr-nome      { font-size: 12px; }
   .pg-num        { font-size: 17px; }
 }
