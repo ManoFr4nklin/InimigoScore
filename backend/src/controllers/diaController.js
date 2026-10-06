@@ -66,6 +66,13 @@ export async function rankingDia(req, res) {
 export async function encerrarDia(req, res) {
   try {
     const { data } = req.params
+    const { rows: jaEncerrado } = await db.query(
+      'SELECT encerrado_em FROM partidas WHERE data = $1 AND is_test IS NOT TRUE AND encerrado_em IS NOT NULL LIMIT 1',
+      [data]
+    )
+    if (jaEncerrado.length > 0) {
+      return res.status(409).json({ error: `Esse dia já foi encerrado em ${jaEncerrado[0].encerrado_em.toISOString()}.` })
+    }
     const players = await statsDodia(data)
 
     if (players.length === 0) {
@@ -90,6 +97,11 @@ export async function encerrarDia(req, res) {
           assistencias:    p.assistencias
         }
       })
+    )
+
+    await db.query(
+      'UPDATE partidas SET encerrado_em = NOW() WHERE data = $1 AND is_test IS NOT TRUE AND encerrado_em IS NULL',
+      [data]
     )
 
     res.json({ data, jogadores: updates })

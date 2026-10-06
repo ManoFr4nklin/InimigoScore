@@ -360,6 +360,12 @@ app.get('/dia/:data/times', async (req, res) => {
 app.post('/dia/:data/encerrar', async (req, res) => {
   try {
     const { data } = req.params
+    const { rows: jaEncerrado } = await pool.query(
+      'SELECT encerrado_em FROM partidas WHERE data = $1 AND is_test IS NOT TRUE AND encerrado_em IS NOT NULL LIMIT 1',
+      [data]
+    )
+    if (jaEncerrado.length > 0)
+      return res.status(409).json({ error: `Esse dia já foi encerrado em ${jaEncerrado[0].encerrado_em.toISOString()}.` })
     const players = await statsDodia(data)
     if (players.length === 0)
       return res.status(400).json({ error: 'Nenhuma partida encontrada nessa data.' })
@@ -373,6 +379,10 @@ app.post('/dia/:data/encerrar', async (req, res) => {
         gols: p.gols, assistencias: p.assistencias,
       }
     }))
+    await pool.query(
+      'UPDATE partidas SET encerrado_em = NOW() WHERE data = $1 AND is_test IS NOT TRUE AND encerrado_em IS NULL',
+      [data]
+    )
     res.json({ data, jogadores: updates })
   } catch (err) { res.status(500).json({ error: err.message }) }
 })

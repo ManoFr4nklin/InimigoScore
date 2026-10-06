@@ -10,10 +10,14 @@ CREATE TABLE IF NOT EXISTS jogadores (
 );
 
 CREATE TABLE IF NOT EXISTS partidas (
-  id      SERIAL PRIMARY KEY,
-  data    DATE NOT NULL,
-  is_test BOOLEAN NOT NULL DEFAULT FALSE
+  id            SERIAL PRIMARY KEY,
+  data          DATE NOT NULL,
+  is_test       BOOLEAN NOT NULL DEFAULT FALSE,
+  encerrado_em  TIMESTAMPTZ -- preenchido quando POST /dia/:data/encerrar roda; bloqueia reaplicação do firepower
 );
+
+-- Para bancos que já tinham a tabela partidas sem a coluna (CREATE TABLE IF NOT EXISTS não adiciona colunas)
+ALTER TABLE partidas ADD COLUMN IF NOT EXISTS encerrado_em TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS confrontos (
   id          SERIAL PRIMARY KEY,
