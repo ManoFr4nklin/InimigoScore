@@ -5,11 +5,7 @@ import './Sorteio.css'
 const TIME_CORES = ['#00e676', '#ff4444', '#2979ff', '#ffd600']
 
 const NOMES_ZUADOS = [
-  'Barselombra FC', 'Manchester Sítio', 'Tottenhamburger', 'Inter de Milanesa',
-  'Patético de Madrid', 'Lyão de Mentira', 'Fenerbaquê', 'Botafofo',
-  'Atleticomido MG', 'América do Nunca', 'Zagueiro Burro FC', 'Universidad del Crack',
-  'Real Vardrid', 'Flamerda', 'Meia Boca Juniors', 'Pathético Paranaense',
-  'Jahia', 'Prantos', 'Merdavaí Futebosta Estrume', 'FlorminenC', 'Epstein FC',
+  'TIME 1', 'TIME 2', 'TIME 3', 'TIME 4'
 ]
 
 function calcOverall(jogadores) {
