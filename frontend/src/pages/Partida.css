@@ -295,9 +295,10 @@
 /* Player stat row with +/- counters */
 .player-stat-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 6px 8px;
+  padding: 8px;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -314,18 +315,23 @@
   min-width: 0;
 }
 
+/* Contadores em grade de 4 colunas abaixo do nome, sempre cabendo no card */
 .psr-counters {
-  display: flex;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  flex-shrink: 0;
 }
 
 .counter-group {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 2px;
+  min-width: 0;
 }
+
+.counter-group .ctr-label { text-align: center; }
 
 .ctr-label {
   font-family: var(--font-heading);
@@ -339,11 +345,14 @@
 .ctr-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 2px;
 }
 
 .ctr-btn {
-  width: 34px;
+  flex: 1 1 0;
+  min-width: 26px;
+  max-width: 44px;
   height: 34px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -356,7 +365,6 @@
   align-items: center;
   justify-content: center;
   transition: color 0.15s, border-color 0.15s;
-  flex-shrink: 0;
 }
 
 .ctr-btn:hover:not(:disabled) {
@@ -715,7 +723,7 @@
 }
 
 @media (max-width: 600px) {
-  .psr-counters  { flex-wrap: wrap; gap: 4px; }
+  .psr-counters  { gap: 4px; }
 }
 
 @media (max-width: 480px) {
@@ -731,17 +739,14 @@
   .res-time-nome    { font-size: 17px; }
   .rotacao          { padding: 12px 14px; gap: 10px; }
   .step-title       { font-size: 22px; }
-  .player-stat-row  { flex-wrap: wrap; }
-  .psr-counters     { width: 100%; flex-wrap: wrap; gap: 4px; }
-  .counter-group    { flex: 1 0 auto; }
 }
 
 @media (max-width: 380px) {
   .pl-num        { font-size: 38px; }
   .pl-num.pl-win { font-size: 46px; }
   .pl-nome       { font-size: 13px; }
-  .ctr-btn       { width: 30px; height: 30px; font-size: 17px; }
-  .ctr-val       { min-width: 22px; font-size: 13px; }
+  .ctr-btn       { height: 30px; font-size: 17px; }
+  .ctr-val       { min-width: 18px; font-size: 13px; }
   .psr-nome      { font-size: 12px; }
   .pg-num        { font-size: 17px; }
 }
